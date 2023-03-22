@@ -1,9 +1,39 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-
-public class PlantGenome : MonoBehaviour
+﻿public class PlantGenome
 {
-    private Dictionary<char, string> rules = new Dictionary<char, string> {{ 'X', "[-FX]X[+FX][+F-FX]" }, { 'F', "FF" }
-    };
+    public LSystem ShootLSystem { get; private set; }
+    public LSystem RootLSystem { get; private set; }
 
+    public PlantGenome()
+    {
+        ShootLSystem = new LSystem("X", 25f, 1f); // Initialize with proper angle and stepSize values
+        RootLSystem = new LSystem("X", 25f, 1f); // Initialize with proper angle and stepSize values
+    }
+
+    public PlantGenome(PlantGenome other)
+    {
+        // Perform a deep copy of the LSystem rules from the other PlantGenome
+        ShootLSystem = new LSystem(other.ShootLSystem.Axiom, other.ShootLSystem.Angle, other.ShootLSystem.StepSize);
+        foreach (var rule in other.ShootLSystem.Rules)
+        {
+            ShootLSystem.Rules[rule.Key] = rule.Value;
+        }
+
+        RootLSystem = new LSystem(other.RootLSystem.Axiom, other.RootLSystem.Angle, other.RootLSystem.StepSize);
+        foreach (var rule in other.RootLSystem.Rules)
+        {
+            RootLSystem.Rules[rule.Key] = rule.Value;
+        }
+    }
+
+    public void InitializeRandomGenome()
+    {
+        ShootLSystem.InitializeRandomRules();
+        RootLSystem.InitializeRandomRules();
+    }
+
+    public void Mutate()
+    {
+        ShootLSystem.MutateRules();
+        RootLSystem.MutateRules();
+    }
 }
