@@ -13,6 +13,16 @@ public class LSystemState
         Orientation = orientation;
         Stack = new Stack<Tuple<Vector3, Quaternion>>();
     }
+    
+    public void RotateUp(float angle)
+    {
+        Orientation *= Quaternion.Euler(0, 0, -angle);
+    }
+
+    public void PitchDown(float angle)
+    {
+        Orientation *= Quaternion.Euler(0, 0, angle);
+    }
 
     public void MoveForward(float stepSize)
     {

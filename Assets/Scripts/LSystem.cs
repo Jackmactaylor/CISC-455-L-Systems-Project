@@ -20,7 +20,22 @@ public class LSystem
     {
         // Define some possible strings for each symbol
         string[] FStrings = {"FF"};
-        string[] XStrings = {"X", "[-FX][+FX][FX]", "[-FX]X[+FX][+F-FX]", "[FF[+XF-F+FX]--F+F-FX]"};
+        ///2D
+        //string[] XStrings = {"X", "[-FX][+FX][FX]", "[-FX]X[+FX][+F-FX]", "[FF[+XF-F+FX]--F+F-FX]"};        
+        //string[] XStrings = {"[F[+FX][*+FX][/+FX]]", "[*+FX]X[+FX][/+F-FX]","[F[-X+F[+FX]][*-X+F[+FX]][/-X+F[+FX]-X]]"};
+        
+        //TODO: Research good starting axioms for X
+        
+        //Symmetrical plants + Original
+        string[] XStrings = {
+            "[F[+FX][*+FX][/+FX]][F[-FX][*-FX][/-FX]]", // Symmetrical rule 1
+            "[F[+FX][*+FX]][F[-FX][*-FX]]", // Symmetrical rule 2
+            "F[+FX]F[-FX]F[+FX]F[-FX]", // Symmetrical rule 3
+            "[F[+FX][*+FX][/+FX]]", // Taken from the original L-System implementation
+            "[*+FX]X[+FX][/+F-FX]", // Taken from the original L-System implementation
+            "[F[-X+F[+FX]][*-X+F[+FX]][/-X+F[+FX]-X]]" // Taken from the original L-System implementation
+        };
+        
 
         // Randomly choose one string for each symbol
         Rules['F'] = FStrings[Random.Range(0,FStrings.Length)];
@@ -34,6 +49,12 @@ public class LSystem
 
         // Randomly choose an Axiom
         Axiom = XStrings[Random.Range(0, XStrings.Length)];
+        
+        // Randomly choose an Angle
+        Angle = Random.Range(25f, 45f);
+        
+        // Randomly choose a StepSize
+        StepSize = Random.Range(2f, 4f);
     }
 
     public void MutateRules()
@@ -41,13 +62,16 @@ public class LSystem
 
     }
 
-    public string ApplyRules(string currentState)
+    public string ApplyRules(string currentState , int iterations)
     {
         string newState = "";
-
-        foreach (char symbol in currentState)
+        
+        for (int i = 0; i < iterations; i++)
         {
-            newState += Rules.ContainsKey(symbol) ? Rules[symbol] : symbol.ToString();
+            foreach (char symbol in currentState)
+            {
+                newState += Rules.ContainsKey(symbol) ? Rules[symbol] : symbol.ToString();
+            }
         }
 
         return newState;

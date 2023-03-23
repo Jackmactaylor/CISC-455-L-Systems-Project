@@ -55,8 +55,7 @@ public class SimulationManager : MonoBehaviour
             float sunlight = Sun.RaycastSunlight(plant.transform.position);
             plant.AddSunlight(sunlight);
             plant.AddWater(WaterPerIteration);
-            plant.GrowShoot();
-            plant.GrowRoot();
+            plant.Grow();
         }
     }
 }

@@ -3,20 +3,21 @@ using UnityEngine;
 
 public class Plant : MonoBehaviour
 {
-    //public PlantGenome PlantGenome { get; private set; }
-    //public PlantGenome plantGenome;
+    public PlantGenome plantGenome { get; private set; }
     public LSystemState ShootState { get; private set; }
     public LSystemState RootState { get; private set; }
     public float SunlightCollected { get; private set; }
     public float WaterCollected { get; private set; }
-    
-    public PlantGenome plantGenome;
-    
+
     public GameObject BranchPrefab;
     
     public GameObject LeafPrefab;
 
     public float branchCost;
+    
+    private int iterationCount = 0;
+    
+    private ObjectPooler objectPooler;
     
     
     public float Fitness
@@ -34,33 +35,89 @@ public class Plant : MonoBehaviour
     public Plant(PlantGenome genome)
     {
         plantGenome = genome;
-        ShootState = new LSystemState(Vector3.zero, Quaternion.identity);
-        RootState = new LSystemState(Vector3.zero, Quaternion.identity);
+        ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
+        RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         shootBranches = new Stack<GameObject>();
     }
 
     private void Awake()
     {
         if(plantGenome == null) plantGenome = new PlantGenome();
-        ShootState = new LSystemState(transform.position, Quaternion.identity);
-        RootState = new LSystemState(transform.position, Quaternion.identity);
+        ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
+        RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         shootBranches = new Stack<GameObject>();
+        
+        objectPooler = FindObjectOfType<ObjectPooler>();
+        
     }
     
-    public void GrowShoot()
+    private string GenerateShootInstructions(int iteration)
     {
-        string shootInstructions = plantGenome.ShootLSystem.ApplyRules(plantGenome.ShootLSystem.Axiom);
-        Debug.Log(shootInstructions);
-        foreach (char symbol in shootInstructions)
+        string prevInstructions = plantGenome.ShootLSystem.Axiom;
+        string newInstructions = "";
+
+        for (int i = 0; i < iteration; i++)
         {
+            newInstructions = plantGenome.ShootLSystem.ApplyRules(prevInstructions, 1);
+            prevInstructions = newInstructions;
+        }
+
+        return newInstructions;
+    }
+
+    //For testing purposes
+    public void ForceGrow()
+    {
+        GrowShoot(iterationCount);
+        GrowRoot(iterationCount);
+        iterationCount++; 
+
+    }
+    
+    public void Grow()
+    {
+        //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
+        if (SunlightCollected >= branchCost && WaterCollected >= branchCost)
+        {
+            GrowShoot(iterationCount);
+            GrowRoot(iterationCount);
+            SunlightCollected -= branchCost;
+            WaterCollected -= branchCost;
+            iterationCount++; 
+            
+        }
+    }
+    
+    public void GrowShoot(int iterations)
+    {
+        string shootInstructions = GenerateShootInstructions(iterations);
+        //Debug.Log(shootInstructions);
+        for (int i = 0; i < shootInstructions.Length; i++)
+        {
+            char symbol = shootInstructions[i];
             switch (symbol)
             {
                 case 'F':
                     Vector3 startPosition = ShootState.Position;
                     ShootState.MoveForward(plantGenome.ShootLSystem.StepSize);
                     Vector3 endPosition = ShootState.Position;
-                    // Add a branch to the shoot
-                    CreateBranch(startPosition, endPosition, BranchPrefab);
+                    // Add a branch or a leaf based on the conditions
+                    bool shouldCreateLeaf =
+                        shootInstructions[(i + 1) % shootInstructions.Length] == 'X' ||
+                        shootInstructions[(i + 3) % shootInstructions.Length] == 'F' &&
+                        shootInstructions[(i + 4) % shootInstructions.Length] == 'X';
+                    //Without object pooling
+                    // GameObject prefabToUse = shouldCreateLeaf ? LeafPrefab : BranchPrefab;
+                    // CreateBranch(startPosition, endPosition, prefabToUse);
+                    //With object pooling
+                    if (shouldCreateLeaf)
+                    {
+                        CreateLeaf(startPosition, endPosition, LeafPrefab);
+                    }
+                    else
+                    {
+                        CreateBranch(startPosition, endPosition, BranchPrefab);
+                    }
                     break;
                 case '+':
                     ShootState.RotateLeft(plantGenome.ShootLSystem.Angle);
@@ -83,11 +140,17 @@ public class Plant : MonoBehaviour
                         Destroy(poppedLeaf);
                     }
                     break;
+                case '/':
+                    ShootState.PitchDown(plantGenome.ShootLSystem.Angle);
+                    break;
+                case '*':
+                    ShootState.RotateUp(plantGenome.ShootLSystem.Angle);
+                    break;
             }
         }
     }
 
-    public void GrowRoot()
+    public void GrowRoot(int iterations)
     {
         //Will be similar to GrowShoot but testing that first before implementing this
 
@@ -99,10 +162,28 @@ public class Plant : MonoBehaviour
         float distance = offset.magnitude;
         Vector3 direction = offset.normalized;
 
-        GameObject branch = Instantiate(branchPrefab, startPosition, Quaternion.LookRotation(Vector3.forward, direction));
-        branch.transform.localScale = new Vector3(branch.transform.localScale.x, distance / branch.transform.localScale.y, branch.transform.localScale.z);
-        branch.transform.position += branch.transform.up * distance / 2;
+        GameObject branch = objectPooler.GetBranch();
+        if (branch == null) return;
+        branch.transform.position = startPosition;
+        branch.transform.rotation = Quaternion.LookRotation(direction);
+        branch.transform.localScale = new Vector3(1, 1, distance);
+        branch.transform.position += branch.transform.forward * distance / 2;
         branch.transform.SetParent(transform);
+    }
+
+    private void CreateLeaf(Vector3 startPosition, Vector3 endPosition, GameObject leafPrefab)
+    {
+        Vector3 offset = endPosition - startPosition;
+        float distance = offset.magnitude;
+        Vector3 direction = offset.normalized;
+
+        GameObject leaf = objectPooler.GetLeaf();
+        if (leaf == null) return;
+        leaf.transform.position = startPosition;
+        leaf.transform.rotation = Quaternion.LookRotation(direction);
+        leaf.transform.localScale = new Vector3(1, 1, distance);
+        leaf.transform.position += leaf.transform.forward * distance / 2;
+        leaf.transform.SetParent(transform);
     }
     
     public void AddSunlight(float sunlight)
