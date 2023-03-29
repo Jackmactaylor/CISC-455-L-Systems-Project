@@ -9,6 +9,9 @@ public class EvolutionManager : MonoBehaviour
     public float crossoverRate;
     public int tournamentSize;
 
+    
+    //Ex Mutate()
+    
     public void ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation)
     {
         List<Plant> newPopulation = new List<Plant>();
@@ -96,6 +99,11 @@ public class EvolutionManager : MonoBehaviour
     private Plant Crossover(Plant parent1, Plant parent2)
     {
         PlantGenome childGenome = new PlantGenome();
+        
+        PlantGenome parent1Genome = parent1.plantGenome;
+        PlantGenome parent2Genome = parent2.plantGenome;
+        
+
         // Perform crossover on the parent genomes to create the child genome
         // This can be done by selecting a crossover point and combining the parent L-system rules
 

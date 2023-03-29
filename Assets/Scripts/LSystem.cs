@@ -22,13 +22,10 @@ public class LSystem
     {
         // Define some possible strings for each symbol
         string[] FStrings = {"FF"};
-        ///2D
-        //string[] XStrings = {"X", "[-FX][+FX][FX]", "[-FX]X[+FX][+F-FX]", "[FF[+XF-F+FX]--F+F-FX]"};        
-        //string[] XStrings = {"[F[+FX][*+FX][/+FX]]", "[*+FX]X[+FX][/+F-FX]","[F[-X+F[+FX]][*-X+F[+FX]][/-X+F[+FX]-X]]"};
-        
+
         //TODO: Research good starting axioms for X
         
-        //Symmetrical plants + Original
+        //Plants
         string[] XStrings = {
             "[F[+FX][*+FX][/+FX]][F[-FX][*-FX][/-FX]]", // Symmetrical rule 1
             "[F[+FX][*+FX]][F[-FX][*-FX]]", // Symmetrical rule 2
@@ -61,7 +58,7 @@ public class LSystem
 
     public void MutateRules()
     {
-
+        //mutate Rules['X']
     }
 
     public string ApplyRules(string currentState , int iterations)

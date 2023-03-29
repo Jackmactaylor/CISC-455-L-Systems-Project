@@ -76,6 +76,10 @@ public class Plant : MonoBehaviour
     
     public void Grow()
     {
+        Debug.Log("name of plant" + gameObject.name);
+        Debug.Log("Current Fitness:" + Fitness + " Current Iteration:" + iterationCount);
+        Debug.Log("Current Sun:" + SunlightCollected + " Current Water:" + WaterCollected);
+        
         //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
         if (SunlightCollected >= branchCost && WaterCollected >= branchCost)
         {
@@ -184,6 +188,9 @@ public class Plant : MonoBehaviour
         leaf.transform.localScale = new Vector3(1, 1, distance);
         leaf.transform.position += leaf.transform.forward * distance / 2;
         leaf.transform.SetParent(transform);
+        
+        //TODO Make color of leaf dependent on height
+
     }
     
     public void AddSunlight(float sunlight)
