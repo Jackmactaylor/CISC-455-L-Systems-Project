@@ -853,7 +853,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 238501018}
   m_LocalRotation: {x: -0, y: 0.67249936, z: -0, w: 0.7400977}
-  m_LocalPosition: {x: 103.4, y: -81.04, z: -46.5}
+  m_LocalPosition: {x: 103.4, y: -80.5, z: -46.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1634580147}
@@ -29609,7 +29609,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02e37df04b46a0f49a17359eabe23521, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotatePosition: {fileID: 0}
+  rotatePosition: {fileID: 1831759100}
   speed: 20
 --- !u!20 &939374907
 Camera:
@@ -33066,7 +33066,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 759e3df140ca1424c986895fa114c3d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  branchPrefab: {fileID: 1456703055220044, guid: b71e387166e4ce648849bbd6b762b736,
+  branchPrefab: {fileID: 3113747633940809739, guid: a23ef91abe765074493d58f91777b29c,
     type: 3}
   leafPrefab: {fileID: 7595319803725887287, guid: 03ee34f762c730545983aed2faee188f,
     type: 3}

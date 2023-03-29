@@ -1,4 +1,6 @@
-﻿public class PlantGenome
+﻿using UnityEngine;
+
+public class PlantGenome : MonoBehaviour
 {
     public LSystem ShootLSystem { get; private set; }
     public LSystem RootLSystem { get; private set; }

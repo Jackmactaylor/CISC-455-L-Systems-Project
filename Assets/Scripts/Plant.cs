@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class Plant : MonoBehaviour
 {
-    public PlantGenome plantGenome { get; private set; }
+    public PlantGenome plantGenome;
     public LSystemState ShootState { get; private set; }
     public LSystemState RootState { get; private set; }
     public float SunlightCollected { get; private set; }
