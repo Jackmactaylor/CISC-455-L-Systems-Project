@@ -75,4 +75,9 @@ public class LSystem
 
         return newState;
     }
+
+    public override string ToString()
+    {
+        return Axiom;
+    }
 }

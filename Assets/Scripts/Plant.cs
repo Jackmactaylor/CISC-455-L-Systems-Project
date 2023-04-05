@@ -18,15 +18,33 @@ public class Plant : MonoBehaviour
     private int iterationCount = 0;
     
     private ObjectPooler objectPooler;
-    
+
+    private float sunlightWeight;
+    private float waterCollectionWeight;
+    private float branchProportionWeight;
+    private float symmetryWeight;
     
     public float Fitness
     {
+        //To-do: implement bilateral symmetry
         get
         {
-            // Fitness could be a combo of sun and water weighted to select for larger roots/shoots
-            return 2 * SunlightCollected + WaterCollected;
-            // Could also be some measure of its total size
+            //Count number of branches and calculate proportion
+            char stackPush = '[';
+            int branchCount = 0;
+            string shootString = ShootState.ToString();
+            foreach (char c in shootString)
+            {
+                if (c == stackPush)
+                    branchCount++;
+            }
+            float branchProportion = branchCount / shootString.Length;
+
+            float fitness = (sunlightWeight * SunlightCollected)
+                + (waterCollectionWeight * WaterCollected)
+                + (branchProportionWeight * branchProportion);
+
+            return fitness;
         }
     }
 
@@ -34,7 +52,12 @@ public class Plant : MonoBehaviour
 
     public Plant(PlantGenome genome)
     {
-        plantGenome = genome;
+        branchCost = 0;
+        sunlightWeight = 1;
+        waterCollectionWeight = 1;
+        branchProportionWeight = 10;
+        symmetryWeight = 0;
+    plantGenome = genome;
         ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         shootBranches = new Stack<GameObject>();
@@ -173,6 +196,8 @@ public class Plant : MonoBehaviour
         branch.transform.localScale = new Vector3(1, 1, distance);
         branch.transform.position += branch.transform.forward * distance / 2;
         branch.transform.SetParent(transform);
+
+        branchCost++;
     }
 
     private void CreateLeaf(Vector3 startPosition, Vector3 endPosition, GameObject leafPrefab)
