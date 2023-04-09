@@ -18,6 +18,7 @@ public class Plant : MonoBehaviour
     private int iterationCount = 0;
     
     private ObjectPooler objectPooler;
+    private int growthcount =0;
     
     
     public float Fitness
@@ -79,19 +80,28 @@ public class Plant : MonoBehaviour
         Debug.Log("name of plant" + gameObject.name);
         Debug.Log("Current Fitness:" + Fitness + " Current Iteration:" + iterationCount);
         Debug.Log("Current Sun:" + SunlightCollected + " Current Water:" + WaterCollected);
-        
+
         //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
-        if (SunlightCollected >= branchCost && WaterCollected >= branchCost)
+        //grow the plant using sunlight resources collected
+        if (SunlightCollected >= (branchCost * growthcount + branchCost) && WaterCollected >= (branchCost * growthcount * .5 + branchCost))
         {
+            SunlightCollected -= branchCost * growthcount + branchCost;
+            WaterCollected -= branchCost * growthcount * .5f + branchCost;
             GrowShoot(iterationCount);
             GrowRoot(iterationCount);
-            SunlightCollected -= branchCost;
-            WaterCollected -= branchCost;
-            iterationCount++; 
-            
+            iterationCount++;
+            Debug.Log("Plant has grown");
+            growthcount++;
         }
+        else
+        {
+            Debug.Log("Plant cannot grow");
+        }
+
+
+
     }
-    
+
     public void GrowShoot(int iterations)
     {
         string shootInstructions = GenerateShootInstructions(iterations);
