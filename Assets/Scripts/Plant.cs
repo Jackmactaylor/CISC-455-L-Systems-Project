@@ -57,7 +57,7 @@ public class Plant : MonoBehaviour
         waterCollectionWeight = 1;
         branchProportionWeight = 10;
         symmetryWeight = 0;
-    plantGenome = genome;
+        plantGenome = genome;
         ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         shootBranches = new Stack<GameObject>();
