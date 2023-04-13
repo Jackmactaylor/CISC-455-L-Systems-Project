@@ -7,7 +7,6 @@ public class LSystem
     public Dictionary<char, string> Rules;
     public float Angle;
     public float StepSize;
-    public float GrowthRate = 0.5f; // Time in seconds to complete one growth iteration
 
 
     public LSystem(string axiom, float angle, float stepSize)

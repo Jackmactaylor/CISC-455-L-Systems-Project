@@ -24,6 +24,8 @@ public class Plant : MonoBehaviour
     private float branchProportionWeight;
     private float symmetryWeight;
     
+    private int growthCount =0;
+    
     public float Fitness
     {
         //To-do: implement bilateral symmetry
@@ -102,18 +104,28 @@ public class Plant : MonoBehaviour
         Debug.Log("name of plant" + gameObject.name);
         Debug.Log("Current Fitness:" + Fitness + " Current Iteration:" + iterationCount);
         Debug.Log("Current Sun:" + SunlightCollected + " Current Water:" + WaterCollected);
-        
+
         //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
-        if (SunlightCollected >= branchCost && WaterCollected >= branchCost)
+        //grow the plant using sunlight resources collected
+        if (SunlightCollected >= (branchCost * growthCount + branchCost) && WaterCollected >= (branchCost * growthCount * .5 + branchCost))
         {
+            SunlightCollected -= branchCost * growthCount + branchCost;
+            WaterCollected -= branchCost * growthCount * .5f + branchCost;
             GrowShoot(iterationCount);
             GrowRoot(iterationCount);
-            SunlightCollected -= branchCost;
-            WaterCollected -= branchCost;
-            iterationCount++; 
-            
+            iterationCount++;
+            Debug.Log("Plant has grown");
+            growthCount++;
         }
+        else
+        {
+            Debug.Log("Plant cannot grow");
+        }
+        
     }
+
+    //TODO Create functions for calculating branchCost based on things like LSystem StepSize
+    
     
     public void GrowShoot(int iterations)
     {
@@ -210,7 +222,7 @@ public class Plant : MonoBehaviour
         if (leaf == null) return;
         leaf.transform.position = startPosition;
         leaf.transform.rotation = Quaternion.LookRotation(direction);
-        leaf.transform.localScale = new Vector3(1, 1, distance);
+        leaf.transform.localScale = new Vector3(2, 2, distance);
         leaf.transform.position += leaf.transform.forward * distance / 2;
         leaf.transform.SetParent(transform);
         

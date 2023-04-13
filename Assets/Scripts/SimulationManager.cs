@@ -48,32 +48,15 @@ public class SimulationManager : MonoBehaviour
         }
     }
 
+    //need to rework this method and likely whole class
     private void ApplyGrowthIteration()
     {
         foreach (Plant plant in plantPopulation)
         {
-            float sunlight = Sun.RaycastSunlight(plant.transform.position);
-            plant.AddSunlight(sunlight);
+            //float sunlight = Sun.RaycastSunlight(plant.transform.position);
+            //plant.AddSunlight(sunlight);
             plant.AddWater(WaterPerIteration);
             plant.Grow();
         }
     }
-}
-
-public class Sun: MonoBehaviour
-{
-    //function to raycast sunlight to plants
-    public float RaycastSunlight(Vector3 plantPosition)
-    {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, plantPosition - transform.position, out hit))
-        {
-            if (hit.collider.gameObject.tag == "Plant")
-            {
-                return 1;
-            }
-        }
-        return 0;
-    }
-    
 }
