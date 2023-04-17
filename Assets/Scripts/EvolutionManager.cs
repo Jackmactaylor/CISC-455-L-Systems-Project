@@ -4,7 +4,10 @@ using UnityEngine;
 public class EvolutionManager : MonoBehaviour
 {
     public enum SelectionMethod { RouletteWheel, Tournament };
+    public enum SelectionType { Elitism };
+
     public SelectionMethod selectionMethod;
+    public SelectionType selectionType;
     public float mutationRate;
     public float crossoverRate;
     public int tournamentSize;
@@ -15,8 +18,10 @@ public class EvolutionManager : MonoBehaviour
     public void ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation)
     {
         List<Plant> newPopulation = new List<Plant>();
+        float newPlants = plantPopulation.Count / 3;
+        float treesNeeded = plantPopulation.Count - newPlants;
 
-        while (newPopulation.Count < plantPopulation.Count)
+        while (newPopulation.Count < newPlants)
         {
             Plant parent1 = SelectParent(plantPopulation);
             Plant parent2 = SelectParent(plantPopulation);
@@ -38,10 +43,41 @@ public class EvolutionManager : MonoBehaviour
 
             newPopulation.Add(child);
         }
+        List < Plant > survivngTrees = SelectTrees(plantPopulation, treesNeeded)
+        newPopulation.AddRange(survivngTrees);
 
         plantPopulation.Clear();
         plantPopulation.AddRange(newPopulation);
     }
+
+
+    private Plant SelectTrees(List<Plant> plantPopulation, float treesNeeded)
+    {
+        switch (SelectionType)
+        {
+            case SelectionType.Elitism:
+                return ElitismSelection(plantPopulation, treesNeeded);
+            default:
+                return null;
+        }
+    }
+
+
+
+
+    //a method that applies the selection method of Elitism, using fitness values, and returns the list of the fittest trees
+    private List<Plant> ElitismSelection(List<Plant> plantPopulation, float treesNeeded)
+    {
+        List<Plant> fittestTrees = new List<Plant>();
+        plantPopulation.Sort((x, y) => y.Fitness.CompareTo(x.Fitness));
+        for (int i = 0; i < treesNeeded; i++)
+        {
+            fittestTrees.Add(plantPopulation[i]);
+        }
+        return fittestTrees;
+    }
+
+
 
     private Plant SelectParent(List<Plant> plantPopulation)
     {
@@ -99,15 +135,54 @@ public class EvolutionManager : MonoBehaviour
     private Plant Crossover(Plant parent1, Plant parent2)
     {
         PlantGenome childGenome = new PlantGenome();
-        
+
         PlantGenome parent1Genome = parent1.plantGenome;
         PlantGenome parent2Genome = parent2.plantGenome;
-        
 
-        // Perform crossover on the parent genomes to create the child genome
-        // This can be done by selecting a crossover point and combining the parent L-system rules
+
+        // Perform uniform crossover on the parents genome to make the child genome, select features of the l-system : rules, axiom, stepsize, angle and growth rate
+        // Shoot LSystem
+        childGenome.ShootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.ShootLSystem.Axiom : parent2Genome.ShootLSystem.Axiom;
+        childGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.ShootLSystem.StepSize : parent2Genome.ShootLSystem.StepSize;
+        childGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1Genome.ShootLSystem.Angle : parent2Genome.ShootLSystem.Angle;
+        childGenome.ShootLSystem.GrowthRate = Random.value < 0.5f ? parent1Genome.ShootLSystem.GrowthRate : parent2Genome.ShootLSystem.GrowthRate;
+        childGenome.ShootLSystem.Rules = new Dictionary<char, string>();
+        foreach (KeyValuePair<char, string> rule in parent1Genome.ShootLSystem.Rules)
+        {
+            childGenome.ShootLSystem.Rules.Add(rule.Key, Random.value < 0.5f ? rule.Value : parent2Genome.ShootLSystem.Rules[rule.Key]);
+        }
+        // Root LSystem
+        childGenome.RootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.RootLSystem.Axiom : parent2Genome.RootLSystem.Axiom;
+        childGenome.RootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.RootLSystem.StepSize : parent2Genome.RootLSystem.StepSize;
+        childGenome.RootLSystem.Angle = Random.value < 0.5f ? parent1Genome.RootLSystem.Angle : parent2Genome.RootLSystem.Angle;
+        childGenome.RootLSystem.GrowthRate = Random.value < 0.5f ? parent1Genome.RootLSystem.GrowthRate : parent2Genome.RootLSystem.GrowthRate;
+        childGenome.RootLSystem.Rules = new Dictionary<char, string>();
+        foreach (KeyValuePair<char, string> rule in parent1Genome.RootLSystem.Rules)
+        {
+            childGenome.RootLSystem.Rules.Add(rule.Key, Random.value < 0.5f ? rule.Value : parent2Genome.RootLSystem.Rules[rule.Key]);
+        }
+
+
+
 
         Plant child = new Plant(childGenome);
         return child;
     }
+
+    private Plant simpleMutation(Plant tree)
+    {
+        PlantGenome treeGenome = tree.plantGenome;
+
+        float currAngle = treeGenome.ShootLSystem.Angle;
+        float currStepsize = treeGenome.ShootLSystem.Stepsize;
+        treeGenome.ShootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngle;
+        treeGenome.ShootLSystem.Stepsize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsize;
+
+        float currAngleR = treeGenome.RootLSystem.Angle;
+        float currStepsizeR = treeGenome.RootLSystem.Stepsize;
+        treeGenome.RootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngleR;
+        treeGenome.RootLSystem.Stepsize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsizeR;
+    }
+        
+
 }
