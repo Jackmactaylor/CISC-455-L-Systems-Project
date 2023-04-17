@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Plant : MonoBehaviour
 {
@@ -13,19 +14,22 @@ public class Plant : MonoBehaviour
     
     public GameObject LeafPrefab;
 
-    public float branchCost;
+    public float branchCost = 0;
     
     private int iterationCount = 0;
-    
+    private int growthCount = 0;
+    private int branchCount;
+
     private ObjectPooler objectPooler;
 
-    private float sunlightWeight;
-    private float waterCollectionWeight;
-    private float branchProportionWeight;
-    private float symmetryWeight;
-    
-    private int growthCount =0;
-    
+    private float sunlightWeight = 1;
+    private float waterCollectionWeight = 1;
+    private float branchProportionWeight = 10;
+    private float symmetryWeight = 0;
+    private float branchCountWeight = 0.125f;
+
+
+
     public float Fitness
     {
         //To-do: implement bilateral symmetry
@@ -33,18 +37,18 @@ public class Plant : MonoBehaviour
         {
             //Count number of branches and calculate proportion
             char stackPush = '[';
-            int branchCount = 0;
+            float localBranchCount = 0;
             string shootString = ShootState.ToString();
             foreach (char c in shootString)
             {
                 if (c == stackPush)
-                    branchCount++;
+                    localBranchCount++;
             }
-            float branchProportion = branchCount / shootString.Length;
+            float branchProportion = localBranchCount / (float)shootString.Length;
 
-            float fitness = (sunlightWeight * SunlightCollected)
+            float fitness = ((sunlightWeight * SunlightCollected)
                 + (waterCollectionWeight * WaterCollected)
-                + (branchProportionWeight * branchProportion);
+                + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
 
             return fitness;
         }
@@ -54,11 +58,6 @@ public class Plant : MonoBehaviour
 
     public Plant(PlantGenome genome)
     {
-        branchCost = 0;
-        sunlightWeight = 1;
-        waterCollectionWeight = 1;
-        branchProportionWeight = 10;
-        symmetryWeight = 0;
         plantGenome = genome;
         ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
@@ -209,7 +208,7 @@ public class Plant : MonoBehaviour
         branch.transform.position += branch.transform.forward * distance / 2;
         branch.transform.SetParent(transform);
 
-        branchCost++;
+        branchCount++;
     }
 
     private void CreateLeaf(Vector3 startPosition, Vector3 endPosition, GameObject leafPrefab)
@@ -225,7 +224,6 @@ public class Plant : MonoBehaviour
         leaf.transform.localScale = new Vector3(2, 2, distance);
         leaf.transform.position += leaf.transform.forward * distance / 2;
         leaf.transform.SetParent(transform);
-        
         //TODO Make color of leaf dependent on height
 
     }
