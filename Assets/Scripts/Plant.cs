@@ -19,17 +19,37 @@ public class Plant : MonoBehaviour
     
     private ObjectPooler objectPooler;
 
-    public int growthcount = 0; //how many times has the plant grown
+    private float sunlightWeight;
+    private float waterCollectionWeight;
+    private float branchProportionWeight;
+    private float symmetryWeight;
     
-
-
+    //age in hours of plant since creation
+    public int age = 0;
+    
+    private int growthCount =0;
+    
     public float Fitness
     {
+        //To-do: implement bilateral symmetry
         get
         {
-            // Fitness could be a combo of sun and water weighted to select for larger roots/shoots
-            return 2 * SunlightCollected + WaterCollected;
-            // Could also be some measure of its total size
+            //Count number of branches and calculate proportion
+            char stackPush = '[';
+            int branchCount = 0;
+            string shootString = ShootState.ToString();
+            foreach (char c in shootString)
+            {
+                if (c == stackPush)
+                    branchCount++;
+            }
+            float branchProportion = branchCount / shootString.Length;
+
+            float fitness = (sunlightWeight * SunlightCollected)
+                + (waterCollectionWeight * WaterCollected)
+                + (branchProportionWeight * branchProportion);
+
+            return fitness;
         }
     }
 
@@ -37,6 +57,11 @@ public class Plant : MonoBehaviour
 
     public Plant(PlantGenome genome)
     {
+        branchCost = 0;
+        sunlightWeight = 1;
+        waterCollectionWeight = 1;
+        branchProportionWeight = 10;
+        symmetryWeight = 0;
         plantGenome = genome;
         ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
@@ -82,27 +107,28 @@ public class Plant : MonoBehaviour
         Debug.Log("name of plant" + gameObject.name);
         Debug.Log("Current Fitness:" + Fitness + " Current Iteration:" + iterationCount);
         Debug.Log("Current Sun:" + SunlightCollected + " Current Water:" + WaterCollected);
-        
+
         //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
         //grow the plant using sunlight resources collected
-        if (SunlightCollected >= (branchCost * iterationCount+branchCost) && WaterCollected >= (branchCost * iterationCount*.5+branchCost))
+        if (SunlightCollected >= (branchCost * growthCount + branchCost) && WaterCollected >= (branchCost * growthCount * .5 + branchCost))
         {
-            SunlightCollected -= branchCost * iterationCount+branchCost;
-            WaterCollected -= branchCost * iterationCount*.5 +branchCost;
+            SunlightCollected -= branchCost * growthCount + branchCost;
+            WaterCollected -= branchCost * growthCount * .5f + branchCost;
             GrowShoot(iterationCount);
             GrowRoot(iterationCount);
-            iterationCount++; 
+            iterationCount++;
             Debug.Log("Plant has grown");
-            growthcount++;
+            growthCount++;
         }
         else
         {
             Debug.Log("Plant cannot grow");
         }
-
-
-
+        
     }
+
+    //TODO Create functions for calculating branchCost based on things like LSystem StepSize
+    
     
     public void GrowShoot(int iterations)
     {
@@ -185,6 +211,8 @@ public class Plant : MonoBehaviour
         branch.transform.localScale = new Vector3(1, 1, distance);
         branch.transform.position += branch.transform.forward * distance / 2;
         branch.transform.SetParent(transform);
+
+        branchCost++;
     }
 
     private void CreateLeaf(Vector3 startPosition, Vector3 endPosition, GameObject leafPrefab)
@@ -197,7 +225,7 @@ public class Plant : MonoBehaviour
         if (leaf == null) return;
         leaf.transform.position = startPosition;
         leaf.transform.rotation = Quaternion.LookRotation(direction);
-        leaf.transform.localScale = new Vector3(1, 1, distance);
+        leaf.transform.localScale = new Vector3(2, 2, distance);
         leaf.transform.position += leaf.transform.forward * distance / 2;
         leaf.transform.SetParent(transform);
         

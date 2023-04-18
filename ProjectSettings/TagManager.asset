@@ -7,6 +7,8 @@ TagManager:
   - Land
   - Water
   - Plant
+  - Leaf
+  - Ground
   layers:
   - Default
   - TransparentFX
