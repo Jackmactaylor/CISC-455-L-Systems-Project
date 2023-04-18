@@ -16,6 +16,10 @@ public class SimulationManager : MonoBehaviour
     //UI stuff
     public TextMeshProUGUI DayText;
     public TextMeshProUGUI HourText;
+    public TextMeshProUGUI AvgFitnessText;
+    public TextMeshProUGUI HighestFitnessText;
+    public TextMeshProUGUI LowestFitnessText;
+    
     //UI slider reference
     public Slider hourSlider;
 
@@ -41,6 +45,7 @@ public class SimulationManager : MonoBehaviour
 
     public void NextStep()
     {
+        
         if (currentIteration < DayDuration)
         {
             Sun.NextHour();
@@ -63,28 +68,89 @@ public class SimulationManager : MonoBehaviour
         HourText.text = "Hour: " + currentIteration;
         hourSlider.maxValue = DayDuration;
         hourSlider.value = currentIteration;
+        AvgFitnessText.text = "Avg Fitness: " + GetAverageFitness();
+        HighestFitnessText.text = "Highest Fitness: " + GetHighestFitness();
+        LowestFitnessText.text = "Lowest Fitness: " + GetLowestFitness();
+    }
+    
+    private float GetAverageFitness()
+    {
+        float totalFitness = 0;
+        foreach (Plant plant in plantPopulation)
+        {
+            totalFitness += plant.Fitness;
+        }
+
+        return totalFitness / plantPopulation.Count;
+    }
+    
+    private float GetHighestFitness()
+    {
+        float highestFitness = 0;
+        foreach (Plant plant in plantPopulation)
+        {
+            if (plant.Fitness > highestFitness)
+            {
+                highestFitness = plant.Fitness;
+            }
+        }
+
+        return highestFitness;
+    }
+    
+    private float GetLowestFitness()
+    {
+        float lowestFitness = 100000;
+        foreach (Plant plant in plantPopulation)
+        {
+            if (plant.Fitness < lowestFitness)
+            {
+                lowestFitness = plant.Fitness;
+            }
+        }
+
+        return lowestFitness;
     }
     
     private void InitializePlantPopulation()
     {
         plantPopulation = new List<Plant>();
-
+        Vector3[] randomPositions = GetValidRandomPositions(PlantPopulationSize);
+        
         for (int i = 0; i < PlantPopulationSize; i++)
         {
-            // Pick random point on ground to place plant
-            Vector3 randomPoint = new Vector3(
-                Random.Range(groundPlane.bounds.min.x, groundPlane.bounds.max.x),
-                groundPlane.transform.position.y,
-                Random.Range(groundPlane.bounds.min.z, groundPlane.bounds.max.z)
-                );
-            GameObject plantObject = Instantiate(PlantPrefab, randomPoint, Quaternion.identity);
+            Vector3 randomRotation = new Vector3(0, UnityEngine.Random.Range(0, 360), 0);
+            GameObject plantObject = Instantiate(PlantPrefab, randomPositions[i], Quaternion.LookRotation(randomRotation));
             Plant plant = plantObject.GetComponent<Plant>();
-            //PlantGenome genome = new PlantGenome();
-            //genome.InitializeRandomGenome();
-            //plant = new Plant(genome);
             plant.RandomizeGenome();
             plantPopulation.Add(plant);
         }
+    }
+
+    private Vector3[] GetValidRandomPositions(int numPositions)
+    {
+        Vector3 randomPoint;
+        Vector3[] randomPositions = new Vector3[numPositions];
+        for (int i = 0; i < numPositions; i++)
+        {
+            do
+            {
+                randomPoint = new Vector3(
+                    Random.Range(groundPlane.bounds.min.x, groundPlane.bounds.max.x),
+                    100,
+                    Random.Range(groundPlane.bounds.min.z, groundPlane.bounds.max.z)
+                );
+                //perform a raycast down to get the y position and only store random positions that are on the land
+                RaycastHit hit;
+                if (Physics.Raycast(randomPoint, Vector3.down, out hit, Mathf.Infinity, 
+                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore) && !hit.collider.CompareTag("Water"))
+                {
+                    randomPositions[i] = new Vector3(randomPoint.x, hit.point.y, randomPoint.z);
+                }
+            } while (randomPositions[i] == Vector3.zero);
+        }
+
+        return randomPositions;
     }
 
     private void ApplyGrowthIteration()

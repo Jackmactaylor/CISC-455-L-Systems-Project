@@ -41,7 +41,8 @@ public class EvolutionManager : MonoBehaviour
 
             newPopulation.Add(child);
         }
-        List < Plant > survivngTrees = SelectTrees(plantPopulation, treesNeeded)
+
+        List<Plant> survivngTrees = SelectTrees(plantPopulation, treesNeeded);
         newPopulation.AddRange(survivngTrees);
 
         plantPopulation.Clear();
@@ -49,9 +50,9 @@ public class EvolutionManager : MonoBehaviour
     }
 
 
-    private Plant SelectTrees(List<Plant> plantPopulation, float treesNeeded)
+    private List<Plant> SelectTrees(List<Plant> plantPopulation, float treesNeeded)
     {
-        switch (SelectionType)
+        switch (selectionType)
         {
             case SelectionType.Elitism:
                 return ElitismSelection(plantPopulation, treesNeeded);
@@ -143,7 +144,6 @@ public class EvolutionManager : MonoBehaviour
         childGenome.ShootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.ShootLSystem.Axiom : parent2Genome.ShootLSystem.Axiom;
         childGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.ShootLSystem.StepSize : parent2Genome.ShootLSystem.StepSize;
         childGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1Genome.ShootLSystem.Angle : parent2Genome.ShootLSystem.Angle;
-        childGenome.ShootLSystem.GrowthRate = Random.value < 0.5f ? parent1Genome.ShootLSystem.GrowthRate : parent2Genome.ShootLSystem.GrowthRate;
         childGenome.ShootLSystem.Rules = new Dictionary<char, string>();
         foreach (KeyValuePair<char, string> rule in parent1Genome.ShootLSystem.Rules)
         {
@@ -153,33 +153,29 @@ public class EvolutionManager : MonoBehaviour
         childGenome.RootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.RootLSystem.Axiom : parent2Genome.RootLSystem.Axiom;
         childGenome.RootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.RootLSystem.StepSize : parent2Genome.RootLSystem.StepSize;
         childGenome.RootLSystem.Angle = Random.value < 0.5f ? parent1Genome.RootLSystem.Angle : parent2Genome.RootLSystem.Angle;
-        childGenome.RootLSystem.GrowthRate = Random.value < 0.5f ? parent1Genome.RootLSystem.GrowthRate : parent2Genome.RootLSystem.GrowthRate;
         childGenome.RootLSystem.Rules = new Dictionary<char, string>();
         foreach (KeyValuePair<char, string> rule in parent1Genome.RootLSystem.Rules)
         {
             childGenome.RootLSystem.Rules.Add(rule.Key, Random.value < 0.5f ? rule.Value : parent2Genome.RootLSystem.Rules[rule.Key]);
         }
 
-
-
-
         Plant child = new Plant(childGenome);
         return child;
     }
 
-    private Plant simpleMutation(Plant tree)
+    private void SimpleMutation(Plant tree)
     {
         PlantGenome treeGenome = tree.plantGenome;
 
         float currAngle = treeGenome.ShootLSystem.Angle;
-        float currStepsize = treeGenome.ShootLSystem.Stepsize;
+        float currStepsize = treeGenome.ShootLSystem.StepSize;
         treeGenome.ShootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngle;
-        treeGenome.ShootLSystem.Stepsize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsize;
+        treeGenome.ShootLSystem.StepSize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsize;
 
         float currAngleR = treeGenome.RootLSystem.Angle;
-        float currStepsizeR = treeGenome.RootLSystem.Stepsize;
+        float currStepsizeR = treeGenome.RootLSystem.StepSize;
         treeGenome.RootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngleR;
-        treeGenome.RootLSystem.Stepsize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsizeR;
+        treeGenome.RootLSystem.StepSize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsizeR;
     }
         
 

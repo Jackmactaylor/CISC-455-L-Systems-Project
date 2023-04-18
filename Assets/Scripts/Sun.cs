@@ -29,17 +29,9 @@ public class Sun : MonoBehaviour
         transform.rotation = startSunPosition.rotation;
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            //NextHour();
-        }
-    }
-
     public void NextHour()
     {
-        Debug.Log($"Starting hour {currentHour}");
+        //Debug.Log($"Starting hour {currentHour}");
 
         // Calculate the fraction of the day based on the current hour
         float fractionOfDay = (float)currentHour / (float)hoursInDay;
@@ -71,7 +63,7 @@ public class Sun : MonoBehaviour
             Ray ray = new Ray(transform.position, direction.normalized);
 
             Debug.DrawRay(ray.origin, ray.direction * maxRaycastDistance, Color.yellow, 1f);
-            Debug.DrawLine(randomPoint, transform.position, Color.red, 2f);
+
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, maxRaycastDistance))
             {
@@ -80,6 +72,7 @@ public class Sun : MonoBehaviour
                     Plant plant = hitInfo.collider.transform.parent.GetComponent<Plant>();
                     if (plant != null)
                     {
+                        Debug.DrawLine(randomPoint, transform.position, Color.green, 10f);
                         plant.AddSunlight(sunlightPerRaycast);
                         Debug.Log($"Added {sunlightPerRaycast} sunlight to plant {plant.name}");
                     }

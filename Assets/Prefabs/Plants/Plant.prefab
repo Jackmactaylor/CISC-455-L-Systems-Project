@@ -709,4 +709,6 @@ MonoBehaviour:
   BranchPrefab: {fileID: 3113747633940809739, guid: a23ef91abe765074493d58f91777b29c,
     type: 3}
   LeafPrefab: {fileID: 1660608306427242, guid: c7986b2d54ec33f4b8d0dd855c370967, type: 3}
-  branchCost: 0
+  maxGrowthIterations: 4
+  branchCost: 3
+  age: 0

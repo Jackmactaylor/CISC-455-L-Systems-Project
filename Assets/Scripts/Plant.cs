@@ -14,10 +14,11 @@ public class Plant : MonoBehaviour
     
     public GameObject LeafPrefab;
 
+    public float maxGrowthIterations = 4;
     public float branchCost = 0;
     
+    
     private int iterationCount = 0;
-    private int growthCount = 0;
     private int branchCount;
 
     private ObjectPooler objectPooler;
@@ -30,8 +31,6 @@ public class Plant : MonoBehaviour
     
     //age in hours of plant since creation
     public int age = 0;
-    
-    private int growthCount =0;
 
     public float Fitness
     {
@@ -47,12 +46,18 @@ public class Plant : MonoBehaviour
                 if (c == stackPush)
                     localBranchCount++;
             }
+            //Count branches relative to length of whole shoot
+            //Plants that have more branches would have more leafs and in theory more sunlight 
             float branchProportion = localBranchCount / (float)shootString.Length;
 
             float fitness = ((sunlightWeight * SunlightCollected)
                 + (waterCollectionWeight * WaterCollected)
                 + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
-
+            Debug.Log("Fitness: " + fitness);
+            Debug.Log("Sunlight: " + sunlightWeight * SunlightCollected);
+            Debug.Log("Water: " + waterCollectionWeight * WaterCollected);
+            Debug.Log("Branch Proportion: " + branchProportionWeight * branchProportion);
+            
             return fitness;
         }
     }
@@ -103,27 +108,28 @@ public class Plant : MonoBehaviour
     
     public void Grow()
     {
-        Debug.Log("name of plant" + gameObject.name);
-        Debug.Log("Current Fitness:" + Fitness + " Current Iteration:" + iterationCount);
-        Debug.Log("Current Sun:" + SunlightCollected + " Current Water:" + WaterCollected);
-
-        //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
-        //grow the plant using sunlight resources collected
-        if (SunlightCollected >= (branchCost * growthCount + branchCost) && WaterCollected >= (branchCost * growthCount * .5 + branchCost))
+        //Grow the plant from seed stage if it is the first iteration
+        if (iterationCount <= 1)
         {
-            SunlightCollected -= branchCost * growthCount + branchCost;
-            WaterCollected -= branchCost * growthCount * .5f + branchCost;
             GrowShoot(iterationCount);
             GrowRoot(iterationCount);
             iterationCount++;
-            Debug.Log("Plant has grown");
-            growthCount++;
         }
-        else
+        //If the plant has enough sunlight and water to grow call the grow functions and iterate the current iteration count
+        //grow the plant using sunlight resources collected
+        else if (iterationCount < maxGrowthIterations)
         {
-            Debug.Log("Plant cannot grow");
+            if (SunlightCollected >= (branchCost * iterationCount + branchCost) &&
+                WaterCollected >= (branchCost * iterationCount * .5 + branchCost))
+            {
+                SunlightCollected -= branchCost * iterationCount + branchCost;
+                WaterCollected -= branchCost * iterationCount * .5f + branchCost;
+                GrowShoot(iterationCount);
+                GrowRoot(iterationCount);
+                iterationCount++;
+            }
         }
-        
+
     }
 
     //TODO Create functions for calculating branchCost based on things like LSystem StepSize
@@ -253,4 +259,19 @@ public class Plant : MonoBehaviour
         plantGenome.InitializeRandomGenome();
     }
     
+    //on draw gizmos draw a vertical line from the plant indicating water collected and a vertical line indicating sun collected
+    private void OnDrawGizmos()
+    {
+        //Sunlight
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.up * SunlightCollected);
+        
+        //Water
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position + Vector3.right, transform.position + Vector3.right + Vector3.up * WaterCollected);
+        
+        //Fitness visualized using a sphere
+        Gizmos.color = Color.green;
+        Gizmos.DrawSphere(transform.position + Vector3.up * 2, Fitness);
+    }
 }
