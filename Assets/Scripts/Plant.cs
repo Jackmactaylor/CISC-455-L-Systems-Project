@@ -21,6 +21,8 @@ public class Plant : MonoBehaviour
     
     
     public float Fitness
+    public float Age
+
     {
         get
         {

@@ -25,6 +25,7 @@ public class SimulationManager : MonoBehaviour
         {
             ApplyGrowthIteration();
             currentIteration++;
+            
         }
         else
         {
