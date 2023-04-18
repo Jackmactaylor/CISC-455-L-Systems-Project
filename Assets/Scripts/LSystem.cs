@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text; // Include the System.Text namespace for StringBuilder
 using UnityEngine;
 
 public class LSystem
@@ -7,7 +8,6 @@ public class LSystem
     public Dictionary<char, string> Rules;
     public float Angle;
     public float StepSize;
-
 
     public LSystem(string axiom, float angle, float stepSize)
     {
@@ -20,7 +20,13 @@ public class LSystem
     public void InitializeRandomRules()
     {
         // Define some possible strings for each symbol
-        string[] FStrings = {"FF"};
+        string[] FStrings =
+        {
+            "FF",
+            "F*F/[-F+F+F]/[+F-F-F]",
+            "F[/F*F*F][/F*F*F]/F",
+
+        };
 
         //TODO: Research good starting axioms for X
         
@@ -52,7 +58,7 @@ public class LSystem
         Angle = Random.Range(25f, 45f);
         
         // Randomly choose a StepSize
-        StepSize = Random.Range(2f, 4f);
+        StepSize = Random.Range(2f, 8f);
     }
 
     public void MutateRules()
@@ -60,21 +66,24 @@ public class LSystem
         //mutate Rules['X']
     }
 
+    // Apply the production rules to the current state `iterations` number of times
     public string ApplyRules(string currentState , int iterations)
     {
-        string newState = "";
-        
+        StringBuilder newState = new StringBuilder(); // Use StringBuilder instead of concatenating with strings
         for (int i = 0; i < iterations; i++)
         {
             foreach (char symbol in currentState)
             {
-                newState += Rules.ContainsKey(symbol) ? Rules[symbol] : symbol.ToString();
+                newState.Append(Rules.ContainsKey(symbol) ? Rules[symbol] : symbol.ToString()); // Append the rule output to the StringBuilder
             }
+            currentState = newState.ToString(); // Set the current state to the new state
+            newState.Clear(); // Clear the StringBuilder for future use
         }
 
-        return newState;
+        return currentState;
     }
 
+    // Return current axiom as string
     public override string ToString()
     {
         return Axiom;

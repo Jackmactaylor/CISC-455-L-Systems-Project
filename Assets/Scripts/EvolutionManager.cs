@@ -8,9 +8,7 @@ public class EvolutionManager : MonoBehaviour
     public float mutationRate;
     public float crossoverRate;
     public int tournamentSize;
-
     
-    //Ex Mutate()
     
     public void ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation)
     {

@@ -24,6 +24,9 @@ public class Plant : MonoBehaviour
     private float branchProportionWeight;
     private float symmetryWeight;
     
+    //age in hours of plant since creation
+    public int age = 0;
+    
     private int growthCount =0;
     
     public float Fitness
