@@ -687,7 +687,7 @@ Transform:
   m_GameObject: {fileID: 8247689411550107031}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 92.28, y: -81.04, z: -85.71}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 8247689410757738073}
   m_Father: {fileID: 0}
@@ -706,9 +706,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   plantGenome: {fileID: 0}
+  waterCollected: 0
+  sunlightCollected: 0
   BranchPrefab: {fileID: 3113747633940809739, guid: a23ef91abe765074493d58f91777b29c,
     type: 3}
   LeafPrefab: {fileID: 1660608306427242, guid: c7986b2d54ec33f4b8d0dd855c370967, type: 3}
   maxGrowthIterations: 4
-  branchCost: 3
+  branchCost: 1
   age: 0

@@ -8,49 +8,99 @@ public class EvolutionManager : MonoBehaviour
 
     public SelectionMethod selectionMethod;
     public SelectionType selectionType;
-    public float mutationRate;
-    public float crossoverRate;
+    public float mutationRate = 0.1f;
+    public float crossoverRate = 0.8f;
     public int tournamentSize;
     
-    
-    public void ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation)
-    {
-        List<Plant> newPopulation = new List<Plant>();
-        float newPlants = plantPopulation.Count / 3;
-        float treesNeeded = plantPopulation.Count - newPlants;
+    public bool useAgism = true;
+    public int numOfDaysForAgism = 3;
+    public float percentOldestToRemove = 0.2f;
 
-        while (newPopulation.Count < newPlants)
+    public List<Plant> ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation, int currentDay, float percentageToReplace = 0.20f )
+    {
+        Debug.Log("plant population: " + plantPopulation);
+        
+        List<Plant> newPopulation = new List<Plant>();
+
+        int lambda = (int)(plantPopulation.Count * (1 - percentageToReplace));
+        int mu = (int)((float)plantPopulation.Count * percentageToReplace);
+
+        for (int i = 0; i < mu; i++)
         {
             Plant parent1 = SelectParent(plantPopulation);
             Plant parent2 = SelectParent(plantPopulation);
 
+            Debug.Log("Parent 1: " + parent1 + "Parent 1 X Rule" + parent1.plantGenome.ShootLSystem.Rules['X']);
+            Debug.Log("Parent 2: " + parent2 + "Parent 2 X Rule" + parent2.plantGenome.ShootLSystem.Rules['X']);
+            
             Plant child;
-            if (Random.value < crossoverRate)
+            //Sexual reproduction
+            if (Random.value > crossoverRate)
             {
                 child = Crossover(parent1, parent2);
+                Debug.Log("Child from crossover X rule: " + child.plantGenome.ShootLSystem.Rules['X']); 
             }
+            //Asexual reproduction
             else
             {
-                child = new Plant(parent1.plantGenome);
+                
+                //50 50 the child gets the genome of either parent
+                child = new Plant(Random.value < 0.5f ? parent1.plantGenome : parent2.plantGenome);
+                Debug.Log("Child from asexual X rule: " + child.plantGenome.ShootLSystem.Rules['X']); 
             }
 
             if (Random.value < mutationRate)
             {
-                child.plantGenome.Mutate();
+                Mutate(child.plantGenome);
             }
 
             newPopulation.Add(child);
         }
 
-        List<Plant> survivngTrees = SelectTrees(plantPopulation, treesNeeded);
-        newPopulation.AddRange(survivngTrees);
+        //sort by age remove % of oldest specified by percentOldestToRemove, then sort by fittest when using agism
+        if (useAgism && currentDay >= numOfDaysForAgism)
+        {
+            plantPopulation.Sort((x, y) => y.age.CompareTo(x.age));
+            
+            Debug.Log("Before Agism application");
+            foreach (Plant plant in plantPopulation)
+            {
+                Debug.Log("Plant: " + plant + "age:" + plant.age);
+            }
+            
+            int numToRemove = (int)(plantPopulation.Count * percentOldestToRemove);
+            plantPopulation.RemoveRange(plantPopulation.Count - numToRemove - 1, numToRemove);
+            
+            Debug.Log("After Agism application");
+            foreach (Plant plant in plantPopulation)
+            {
+                Debug.Log("Plant: " + plant + "age:" + plant.age);
+            }
+        }
 
-        plantPopulation.Clear();
-        plantPopulation.AddRange(newPopulation);
+        //Selecting lamba - mu parents to include in the new population from PlantPopulation
+        //If plantPopulation.count - mu is less than lambda, then randomly add copies of the parents to the new population until lambda is reached
+        
+        //Ensure that the new population is at least lambda
+        if(plantPopulation.Count < lambda)
+        {
+            int numToAdd = lambda - plantPopulation.Count;
+            for(int i = 0; i < numToAdd; i++){
+                Plant parent = SelectParent(plantPopulation);
+                plantPopulation.Add(new Plant(parent.plantGenome));
+            }
+        }
+        
+        //adding lambda to new population
+        List<Plant> lambdaPlants = SelectTrees(plantPopulation, lambda);
+        newPopulation.AddRange(lambdaPlants);
+
+        return newPopulation;
+
     }
 
 
-    private List<Plant> SelectTrees(List<Plant> plantPopulation, float treesNeeded)
+    private List<Plant> SelectTrees(List<Plant> plantPopulation, int treesNeeded)
     {
         switch (selectionType)
         {
@@ -60,12 +110,10 @@ public class EvolutionManager : MonoBehaviour
                 return null;
         }
     }
-
-
-
+    
 
     //a method that applies the selection method of Elitism, using fitness values, and returns the list of the fittest trees
-    private List<Plant> ElitismSelection(List<Plant> plantPopulation, float treesNeeded)
+    private List<Plant> ElitismSelection(List<Plant> plantPopulation, int treesNeeded)
     {
         List<Plant> fittestTrees = new List<Plant>();
         plantPopulation.Sort((x, y) => y.Fitness.CompareTo(x.Fitness));
@@ -138,45 +186,65 @@ public class EvolutionManager : MonoBehaviour
         PlantGenome parent1Genome = parent1.plantGenome;
         PlantGenome parent2Genome = parent2.plantGenome;
 
+        Dictionary<char, List<string>> parentRules = new Dictionary<char, List<string>>();
+        
+        //for each char representing a Rule in each parents Dictionary<char, string> Rules, add the Rule to the List<string> of the Dictionary<char, List<string>> parentRules
+        foreach (KeyValuePair<char, string> rule in parent1Genome.ShootLSystem.Rules)
+        {
+            if (!parentRules.ContainsKey(rule.Key))
+            {
+                parentRules.Add(rule.Key, new List<string>());
+            }
+            parentRules[rule.Key].Add(rule.Value);
+        }
+        foreach (KeyValuePair<char, string> rule in parent2Genome.ShootLSystem.Rules)
+        {
+            if (!parentRules.ContainsKey(rule.Key))
+            {
+                parentRules.Add(rule.Key, new List<string>());
+            }
+            parentRules[rule.Key].Add(rule.Value);
+        }
+        
+        
+        //foreach rule in parentRules GenerateRandomRules that is the avg of parent1 and parent2 max length for that rule +- 1)
+        foreach (KeyValuePair<char, List<string>> rule in parentRules)
+        {
+            float childRuleLength = 0f;
+            foreach (string parentRule in rule.Value)
+            {
+                   childRuleLength += parentRule.Length;
+            }
+            childRuleLength /= rule.Value.Count;
+            //Add some variation into the rule length + - 3 range for additional characters to be selected
+            int ruleVariation = Random.Range(-3, 3);
+            
+            if(childRuleLength + ruleVariation > 0)
+            {
+                childRuleLength += ruleVariation;
+            }
+
+            //PlantObject.name, Rule Key, Rule Value, RuleLength
+            Debug.Log("Parent names: " + parent1 + ", " + parent2);
+            Debug.Log("Rule Key: " + rule.Key + ", Rule Value: " + rule.Value + ", Rule Length: " + childRuleLength);
+            
+            string newRule = childGenome.ShootLSystem.GenerateRandomRule(rule.Value, (int)childRuleLength);
+            //Give the child the new rule
+            childGenome.ShootLSystem.Rules[rule.Key] = newRule;
+        }
 
         // Perform uniform crossover on the parents genome to make the child genome, select features of the l-system : rules, axiom, stepsize, angle and growth rate
         // Shoot LSystem
-        childGenome.ShootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.ShootLSystem.Axiom : parent2Genome.ShootLSystem.Axiom;
         childGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.ShootLSystem.StepSize : parent2Genome.ShootLSystem.StepSize;
         childGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1Genome.ShootLSystem.Angle : parent2Genome.ShootLSystem.Angle;
-        childGenome.ShootLSystem.Rules = new Dictionary<char, string>();
-        foreach (KeyValuePair<char, string> rule in parent1Genome.ShootLSystem.Rules)
-        {
-            childGenome.ShootLSystem.Rules.Add(rule.Key, Random.value < 0.5f ? rule.Value : parent2Genome.ShootLSystem.Rules[rule.Key]);
-        }
-        // Root LSystem
-        childGenome.RootLSystem.Axiom = Random.value < 0.5f ? parent1Genome.RootLSystem.Axiom : parent2Genome.RootLSystem.Axiom;
-        childGenome.RootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.RootLSystem.StepSize : parent2Genome.RootLSystem.StepSize;
-        childGenome.RootLSystem.Angle = Random.value < 0.5f ? parent1Genome.RootLSystem.Angle : parent2Genome.RootLSystem.Angle;
-        childGenome.RootLSystem.Rules = new Dictionary<char, string>();
-        foreach (KeyValuePair<char, string> rule in parent1Genome.RootLSystem.Rules)
-        {
-            childGenome.RootLSystem.Rules.Add(rule.Key, Random.value < 0.5f ? rule.Value : parent2Genome.RootLSystem.Rules[rule.Key]);
-        }
 
         Plant child = new Plant(childGenome);
         return child;
     }
-
-    private void SimpleMutation(Plant tree)
+    
+    private void Mutate(PlantGenome genome)
     {
-        PlantGenome treeGenome = tree.plantGenome;
-
-        float currAngle = treeGenome.ShootLSystem.Angle;
-        float currStepsize = treeGenome.ShootLSystem.StepSize;
-        treeGenome.ShootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngle;
-        treeGenome.ShootLSystem.StepSize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsize;
-
-        float currAngleR = treeGenome.RootLSystem.Angle;
-        float currStepsizeR = treeGenome.RootLSystem.StepSize;
-        treeGenome.RootLSystem.Angle = Random.value < 0.1f ? Random.Range(20f, 100f) : currAngleR;
-        treeGenome.RootLSystem.StepSize = Random.value < 0.1f ? Random.Range(2f, 5f) : currStepsizeR;
+        genome.Mutate();
     }
-        
 
 }

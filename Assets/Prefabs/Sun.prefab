@@ -25,7 +25,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9024952778319213039}
-  m_LocalRotation: {x: 0.6196213, y: 0.7232044, z: -0.24071458, w: 0.18735377}
+  m_LocalRotation: {x: 0.61962193, y: 0.723204, z: -0.24071385, w: 0.18735398}
   m_LocalPosition: {x: 23.10907, y: 506.90033, z: -58.012817}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
@@ -111,8 +111,8 @@ MonoBehaviour:
   endSunPosition: {fileID: 0}
   groundPlane: {fileID: 0}
   totalMovementTime: 5
-  hoursInDay: 8
-  numRaycasts: 100
+  hoursInDay: 12
+  numRaycasts: 500
   maxRaycastDistance: 1000
   sunlightPerRaycast: 1
 --- !u!1 &9024952778589419924

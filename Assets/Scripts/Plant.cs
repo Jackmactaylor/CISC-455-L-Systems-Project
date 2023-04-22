@@ -7,8 +7,12 @@ public class Plant : MonoBehaviour
     public PlantGenome plantGenome;
     public LSystemState ShootState { get; private set; }
     public LSystemState RootState { get; private set; }
-    public float SunlightCollected { get; private set; }
-    public float WaterCollected { get; private set; }
+
+    public float waterCollected;
+    public float sunlightCollected;
+    
+    public float totalWaterCollected;
+    public float totalSunlightCollected;
 
     public GameObject BranchPrefab;
     
@@ -16,7 +20,6 @@ public class Plant : MonoBehaviour
 
     public float maxGrowthIterations = 4;
     public float branchCost = 0;
-    
     
     private int iterationCount = 0;
     private int branchCount;
@@ -50,25 +53,33 @@ public class Plant : MonoBehaviour
             //Plants that have more branches would have more leafs and in theory more sunlight 
             float branchProportion = localBranchCount / (float)shootString.Length;
 
-            float fitness = ((sunlightWeight * SunlightCollected)
-                + (waterCollectionWeight * WaterCollected)
+            float fitness = ((sunlightWeight * sunlightCollected)
+                + (waterCollectionWeight * waterCollected)
                 + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
-            Debug.Log("Fitness: " + fitness);
-            Debug.Log("Sunlight: " + sunlightWeight * SunlightCollected);
-            Debug.Log("Water: " + waterCollectionWeight * WaterCollected);
-            Debug.Log("Branch Proportion: " + branchProportionWeight * branchProportion);
             
+            if (sunlightCollected > 0 || waterCollected > 0)
+            {
+                //Debug.Log("Fitness: " + fitness);
+                //Debug.Log("Sunlight: " + sunlightWeight * sunlightCollected);
+                //Debug.Log("Water: " + waterCollectionWeight * waterCollected);
+                //Debug.Log("Branch Proportion: " + branchProportionWeight * branchProportion);
+            }
+
             return fitness;
         }
     }
 
+    //BranchCost is calculated based on:
+    //1. Number of consecutive branches (F)
+    
+    
     private Stack<GameObject> shootBranches;
 
     public Plant(PlantGenome genome)
     {
         plantGenome = genome;
-        ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
-        RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
+        ShootState = new LSystemState(Vector3.zero, Quaternion.Euler(-90, 0, 0));
+        RootState = new LSystemState(Vector3.zero,  Quaternion.Euler(-90, 0, 0));
         shootBranches = new Stack<GameObject>();
     }
 
@@ -82,6 +93,7 @@ public class Plant : MonoBehaviour
         objectPooler = FindObjectOfType<ObjectPooler>();
         
     }
+    
     
     private string GenerateShootInstructions(int iteration)
     {
@@ -119,11 +131,11 @@ public class Plant : MonoBehaviour
         //grow the plant using sunlight resources collected
         else if (iterationCount < maxGrowthIterations)
         {
-            if (SunlightCollected >= (branchCost * iterationCount + branchCost) &&
-                WaterCollected >= (branchCost * iterationCount * .5 + branchCost))
+            if (sunlightCollected >= (branchCost * iterationCount + branchCost) &&
+                waterCollected >= (branchCost * iterationCount * .5 + branchCost))
             {
-                SunlightCollected -= branchCost * iterationCount + branchCost;
-                WaterCollected -= branchCost * iterationCount * .5f + branchCost;
+                sunlightCollected -= branchCost * iterationCount + branchCost;
+                waterCollected -= branchCost * iterationCount * .5f + branchCost;
                 GrowShoot(iterationCount);
                 GrowRoot(iterationCount);
                 iterationCount++;
@@ -239,24 +251,35 @@ public class Plant : MonoBehaviour
     
     public void AddSunlight(float sunlight)
     {
-        SunlightCollected += sunlight;
+        sunlightCollected += sunlight;
+        totalSunlightCollected += sunlight;
     }
 
     public void AddWater(float water)
     {
-        WaterCollected += water;
+        waterCollected += water;
+        totalWaterCollected += water;
     }
     
-    public void Reset()
+    public void ResetResources()
     {
-        SunlightCollected = 0;
-        WaterCollected = 0;
+        sunlightCollected = 0;
+        waterCollected = 0;
+        totalSunlightCollected = 0;
+        totalWaterCollected = 0;
+    }
+
+    public void ResetGrowth()
+    {
+        iterationCount = 0;
+        age = 0;
+        Grow();
     }
     
-    public void RandomizeGenome()
+    public void RandomizeGenome(bool completelyRandom = true)
     {
         plantGenome = new PlantGenome();
-        plantGenome.InitializeRandomGenome();
+        plantGenome.InitializeRandomGenome(completelyRandom);
     }
     
     //on draw gizmos draw a vertical line from the plant indicating water collected and a vertical line indicating sun collected
@@ -264,14 +287,14 @@ public class Plant : MonoBehaviour
     {
         //Sunlight
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.up * SunlightCollected);
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.up * sunlightCollected);
         
         //Water
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(transform.position + Vector3.right, transform.position + Vector3.right + Vector3.up * WaterCollected);
+        Gizmos.DrawLine(transform.position + Vector3.right, transform.position + Vector3.right + Vector3.up * waterCollected);
         
         //Fitness visualized using a sphere
-        Gizmos.color = Color.green;
-        Gizmos.DrawSphere(transform.position + Vector3.up * 2, Fitness);
+        //Gizmos.color = Color.green;
+        //Gizmos.DrawSphere(transform.position + Vector3.up * 2, Fitness);
     }
 }
