@@ -30,7 +30,8 @@ public class PlantGenome : MonoBehaviour
     public void InitializeRandomGenome(bool completelyRandom = true)
     {
         ShootLSystem.InitializeRandomRules(completelyRandom);
-        RootLSystem.InitializeRandomRules(completelyRandom);
+        //Roots were cut for now due to scope of course and project
+        //RootLSystem.InitializeRandomRules(completelyRandom);
     }
 
     public void Mutate()
@@ -38,7 +39,7 @@ public class PlantGenome : MonoBehaviour
         //Mutate both the Rules and Parameters of the LSystems
         ShootLSystem.MutateRules();
         ShootLSystem.MutateParameters();
-        RootLSystem.MutateRules();
-        RootLSystem.MutateParameters();
+        //RootLSystem.MutateRules();
+       // RootLSystem.MutateParameters();
     }
 }

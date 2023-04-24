@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ObjectPooler : MonoBehaviour
@@ -24,6 +25,7 @@ public class ObjectPooler : MonoBehaviour
         for (int i = 0; i < poolSize; i++)
         {
             GameObject obj = Instantiate(prefab);
+            obj.name = obj.name + "_"+ i;
             obj.SetActive(false);
             // Parent the object to the ObjectPooler
             obj.transform.SetParent(transform);
@@ -57,8 +59,22 @@ public class ObjectPooler : MonoBehaviour
 
     public void ReturnToPool(GameObject obj)
     {
-        obj.SetActive(false);
+        //Debug.Log("Returning " + obj.name + " to pool");
         // Parent the object to the ObjectPooler
+        obj.transform.parent = null;
         obj.transform.SetParent(transform);
+        obj.SetActive(false);
+
+    }
+    
+    public void ReturnAllToPool()
+    {
+        foreach (GameObject obj in branchPool.Concat(leafPool))
+        {
+            if (obj.activeInHierarchy)
+            {
+                ReturnToPool(obj);
+            }
+        }
     }
 }

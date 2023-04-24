@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text; // Include the System.Text namespace for StringBuilder
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class LSystem
 {
@@ -45,7 +47,117 @@ public class LSystem
         Rules = new Dictionary<char, string>();
     }
     
+    public string SymmetricalOnePointCrossover(string parent1, string parent2)
+    {
+        int length = Math.Min(parent1.Length, parent2.Length) / 2;
+        int crossoverPoint = Random.Range(0, length);
+        string firstHalf = parent1.Substring(0, crossoverPoint) + parent2.Substring(parent2.Length - length + crossoverPoint);
+        
+        //Mirror the first half and replace '[' with ']' and vice versa to form the child string
+        StringBuilder secondHalf = new StringBuilder(firstHalf);
+        char[] secondHalfArray = secondHalf.ToString().ToCharArray();
+        Array.Reverse(secondHalfArray);
+        secondHalf = new StringBuilder(new string(secondHalfArray));
+        
+        for(int i = 0; i < secondHalf.Length; i++) {
+            if (secondHalf[i] == '[') {
+                secondHalf[i] = ']';
+            } else if (secondHalf[i] == ']') {
+                secondHalf[i] = '[';
+            }
+        }
+
+        string child = firstHalf + secondHalf;
+        
+        return child;
+    }
     
+    public string NPointCrossover(string parent1, string parent2, int n)
+    {
+        StringBuilder child = new StringBuilder(parent1);
+
+        // Insert substrings from parent2 into parent1 at n evenly spaced points
+        for (int i = 1; i <= n; i++)
+        {
+            int insertIndex = (int)(i * (parent1.Length / (float)(n + 1))); // Calculate the index to insert at
+            if (insertIndex < child.Length) // Check if the index is in range
+            {
+                int length = Math.Min(parent2.Length - insertIndex, child.Length - insertIndex); // Limit the length of the substring
+                if (length > 0)
+                {
+                    child.Remove(insertIndex, length); // Remove any existing characters at that index
+                    child.Insert(insertIndex, parent2.Substring(insertIndex, length)); // Insert substring from parent2
+                }
+            }
+        }
+
+        return child.ToString();
+    }
+    
+    //performs crossover for half the parents string and then mirrors it to create a symmetrical child string
+    public string SymmetricalNPointCrossover(string parent1, string parent2, int n)
+    {
+        bool flip = Random.value < 0.5f;
+        int lengthOfHalf = parent1.Length / 2;
+        int spacing = lengthOfHalf / (n + 1);
+        int maxVariance = 3;
+
+        StringBuilder child = new StringBuilder(parent1);
+        for (int i = 1; i <= n; i++)
+        {
+            int insertIndex = i * spacing;
+            if (flip)
+            {
+                insertIndex += lengthOfHalf;
+            }
+            if (insertIndex >= lengthOfHalf) continue;
+
+            int length = Math.Min(parent2.Length - insertIndex, lengthOfHalf - insertIndex);
+            if (length <= 0) continue;
+
+            if (insertIndex + length > parent1.Length / 2)
+            {
+                length = parent1.Length / 2 - insertIndex;
+            }
+            if (length <= 0) continue;
+
+            child.Remove(insertIndex, length);
+            child.Insert(insertIndex, parent2.Substring(insertIndex, length));
+        }
+
+        int idealLength = (parent1.Length + parent2.Length) / 4;
+        int variance = Random.Range(-maxVariance, maxVariance + 1);
+        while (child.Length > idealLength + variance)
+        {
+            child.Remove(Random.Range(0, child.Length), 1);
+        }
+
+        string leftHalf = child.ToString().Substring(0, lengthOfHalf);
+        StringBuilder mirroredString = new StringBuilder(leftHalf.Length);
+        foreach (char c in leftHalf.Reverse())
+        {
+            char mirror = (c == '[') ? ']' : ((c == ']') ? '[' : c);
+            mirroredString.Append(mirror);
+        }
+
+        if (flip)
+        {
+            child.Length = lengthOfHalf;
+            child.Append(mirroredString.ToString());
+        }
+        else
+        {
+            child.Insert(0, mirroredString.ToString());
+        }
+
+        Debug.Log($"Parent 1: {parent1}");
+        Debug.Log($"Parent 2: {parent2}");
+        Debug.Log("Symmetrical crossover:");
+
+        return child.ToString();
+    }
+    
+    //Warning, leads to highly random and complex rules, use with caution
     public string GenerateRandomRule(List<string> strings, int maxLength = 40, int numSubstrings = 3)
     {
         StringBuilder sb = new StringBuilder();
@@ -85,17 +197,17 @@ public class LSystem
 
         // Randomize the F and X rules
         if (completelyRandom)
-       {
-           Rules['F'] = GenerateRandomRule(FStrings.ToList(), Random.Range(2, 40));
-           Rules['X'] = GenerateRandomRule(XStrings.ToList(), Random.Range(2, 40));
-       }
-       else
-       {
-           Rules['F'] = FStrings[Random.Range(0,FStrings.Length)];
-           Rules['X'] = XStrings[Random.Range(0,XStrings.Length)];
-       }
-        Debug.Log("Rules['F'] = " + Rules['F']);
-       Debug.Log("Rules['X'] = " + Rules['X']);
+        {
+            Rules['F'] = GenerateRandomRule(FStrings.ToList(), Random.Range(2, 20));
+            Rules['X'] = GenerateRandomRule(XStrings.ToList(), Random.Range(8, 40));
+        }
+        else
+        {
+            Rules['F'] = FStrings[Random.Range(0,FStrings.Length)];
+            Rules['X'] = XStrings[Random.Range(0,XStrings.Length)];
+        } 
+        //Debug.Log("Rules['F'] = " + Rules['F']);
+       //Debug.Log("Rules['X'] = " + Rules['X']);
        // Assign fixed strings for other symbols
         // rules below keep the current system
         Rules['+'] = "+";
@@ -124,33 +236,15 @@ public class LSystem
         
     }
 
-    public void MutateRules(float angleProb = 0.2f, float pushPopProb = 0.2f, float fProb = 0.2f, float xProb = 0.2f)
+    public void MutateRules(float angleProb = 0.05f, float pushPopProb = 0.05f, float fProb = 0.2f, float xProb = 0.2f)
     {
-        //
-        Rules['['] = (Random.value < pushPopProb) ? "[" : "[["; // 15%? chance for a single push or double push
-        Rules[']'] = (Random.value < pushPopProb) ? "]" : "]]"; // 15%? chance for a single pop or double pop
-        Rules['+'] = (Random.value < angleProb) ? "+" : "++"; // 30%? chance for a single rotation or double rotation
-        Rules['-'] = (Random.value < angleProb) ? "-" : "--"; // 30%? chance for a single rotation or double rotation
-
-        Rules['['] =
-            (Random.value < pushPopProb)
-                ? "["
-                : ""; // pushPopProb chance for adding, pushPopProb chance for keeping, and (1 - pushPopProb) chance for deleting
-        Rules[']'] =
-            (Random.value < pushPopProb)
-                ? "]"
-                : ""; // pushPopProb chance for adding, pushPopProb chance for keeping, and (1 - pushPopProb) chance for deleting
-        Rules['+'] =
-            (Random.value < angleProb)
-                ? "+"
-                : ""; // angleProb chance for adding, angleProb chance for keeping, and (1 - angleProb) chance for deleting
-        Rules['-'] =
-            (Random.value < angleProb)
-                ? "-"
-                : ""; // angleProb chance for adding, angleProb chance for keeping, and (1 - angleProb) chance for deleting
-
-
-        // Randomly choose a character to mutate for F and X rules and its index
+        //Low chance to introduce double rotation or double push/pop which drastically changes plant structure
+        Rules['['] = (Random.value < pushPopProb) ? "[" : "[["; 
+        Rules[']'] = (Random.value < pushPopProb) ? "]" : "]]"; 
+        Rules['+'] = (Random.value < angleProb) ? "+" : "++"; 
+        Rules['-'] = (Random.value < angleProb) ? "-" : "--"; 
+        
+        // Randomly choose a character to mutate for F and X rules and its index at a higher probability as this mutation is less destructive
         char mutateChar = (Random.value < fProb) ? 'F' : (Random.value < fProb + xProb) ? 'X' : ' '; 
         if(mutateChar == 'F' || mutateChar == 'X')
         {

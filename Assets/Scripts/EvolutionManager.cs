@@ -5,11 +5,15 @@ public class EvolutionManager : MonoBehaviour
 {
     public enum SelectionMethod { RouletteWheel, Tournament };
     public enum SelectionType { Elitism };
+    
+    public enum CrossoverMethod { OnePoint, NPoint, NPointSymmetrical, HighlyRandom};
 
     public SelectionMethod selectionMethod;
     public SelectionType selectionType;
+    public CrossoverMethod crossoverMethod = CrossoverMethod.OnePoint;
     public float mutationRate = 0.1f;
-    public float crossoverRate = 0.8f;
+    public float crossoverRate = 0.2f;
+    public int crossoverPoints = 1;
     public int tournamentSize;
     
     public bool useAgism = true;
@@ -18,35 +22,30 @@ public class EvolutionManager : MonoBehaviour
 
     public List<Plant> ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation, int currentDay, float percentageToReplace = 0.20f )
     {
-        Debug.Log("plant population: " + plantPopulation);
+        //Debug.Log("plant population: " + plantPopulation);
         
         List<Plant> newPopulation = new List<Plant>();
 
-        int lambda = (int)(plantPopulation.Count * (1 - percentageToReplace));
+        int lambda = Mathf.CeilToInt(plantPopulation.Count * (1 - percentageToReplace));
         int mu = (int)((float)plantPopulation.Count * percentageToReplace);
 
         for (int i = 0; i < mu; i++)
         {
             Plant parent1 = SelectParent(plantPopulation);
             Plant parent2 = SelectParent(plantPopulation);
-
-            Debug.Log("Parent 1: " + parent1 + "Parent 1 X Rule" + parent1.plantGenome.ShootLSystem.Rules['X']);
-            Debug.Log("Parent 2: " + parent2 + "Parent 2 X Rule" + parent2.plantGenome.ShootLSystem.Rules['X']);
-            
             Plant child;
+            
             //Sexual reproduction
-            if (Random.value > crossoverRate)
+            if (Random.value < crossoverRate)
             {
                 child = Crossover(parent1, parent2);
-                Debug.Log("Child from crossover X rule: " + child.plantGenome.ShootLSystem.Rules['X']); 
             }
+            
             //Asexual reproduction
             else
             {
-                
                 //50 50 the child gets the genome of either parent
                 child = new Plant(Random.value < 0.5f ? parent1.plantGenome : parent2.plantGenome);
-                Debug.Log("Child from asexual X rule: " + child.plantGenome.ShootLSystem.Rules['X']); 
             }
 
             if (Random.value < mutationRate)
@@ -62,20 +61,20 @@ public class EvolutionManager : MonoBehaviour
         {
             plantPopulation.Sort((x, y) => y.age.CompareTo(x.age));
             
-            Debug.Log("Before Agism application");
+            /*Debug.Log("Before Agism application");
             foreach (Plant plant in plantPopulation)
             {
                 Debug.Log("Plant: " + plant + "age:" + plant.age);
-            }
+            }*/
             
             int numToRemove = (int)(plantPopulation.Count * percentOldestToRemove);
-            plantPopulation.RemoveRange(plantPopulation.Count - numToRemove - 1, numToRemove);
+            plantPopulation.RemoveRange(0, numToRemove);
             
-            Debug.Log("After Agism application");
+            /*Debug.Log("After Agism application");
             foreach (Plant plant in plantPopulation)
             {
                 Debug.Log("Plant: " + plant + "age:" + plant.age);
-            }
+            }*/
         }
 
         //Selecting lamba - mu parents to include in the new population from PlantPopulation
@@ -186,55 +185,33 @@ public class EvolutionManager : MonoBehaviour
         PlantGenome parent1Genome = parent1.plantGenome;
         PlantGenome parent2Genome = parent2.plantGenome;
 
-        Dictionary<char, List<string>> parentRules = new Dictionary<char, List<string>>();
-        
-        //for each char representing a Rule in each parents Dictionary<char, string> Rules, add the Rule to the List<string> of the Dictionary<char, List<string>> parentRules
-        foreach (KeyValuePair<char, string> rule in parent1Genome.ShootLSystem.Rules)
+        if (crossoverMethod == CrossoverMethod.OnePoint)
         {
-            if (!parentRules.ContainsKey(rule.Key))
-            {
-                parentRules.Add(rule.Key, new List<string>());
-            }
-            parentRules[rule.Key].Add(rule.Value);
-        }
-        foreach (KeyValuePair<char, string> rule in parent2Genome.ShootLSystem.Rules)
-        {
-            if (!parentRules.ContainsKey(rule.Key))
-            {
-                parentRules.Add(rule.Key, new List<string>());
-            }
-            parentRules[rule.Key].Add(rule.Value);
+            childGenome.ShootLSystem.Rules['F'] = childGenome.ShootLSystem.SymmetricalOnePointCrossover(
+                parent1Genome.ShootLSystem.Rules['F'], parent2Genome.ShootLSystem.Rules['F']);
+            childGenome.ShootLSystem.Rules['X'] = childGenome.ShootLSystem.SymmetricalOnePointCrossover(
+                parent1Genome.ShootLSystem.Rules['X'], parent2Genome.ShootLSystem.Rules['X']);
         }
         
-        
-        //foreach rule in parentRules GenerateRandomRules that is the avg of parent1 and parent2 max length for that rule +- 1)
-        foreach (KeyValuePair<char, List<string>> rule in parentRules)
+        if (crossoverMethod == CrossoverMethod.NPoint)
         {
-            float childRuleLength = 0f;
-            foreach (string parentRule in rule.Value)
-            {
-                   childRuleLength += parentRule.Length;
-            }
-            childRuleLength /= rule.Value.Count;
-            //Add some variation into the rule length + - 3 range for additional characters to be selected
-            int ruleVariation = Random.Range(-3, 3);
-            
-            if(childRuleLength + ruleVariation > 0)
-            {
-                childRuleLength += ruleVariation;
-            }
-
-            //PlantObject.name, Rule Key, Rule Value, RuleLength
-            Debug.Log("Parent names: " + parent1 + ", " + parent2);
-            Debug.Log("Rule Key: " + rule.Key + ", Rule Value: " + rule.Value + ", Rule Length: " + childRuleLength);
-            
-            string newRule = childGenome.ShootLSystem.GenerateRandomRule(rule.Value, (int)childRuleLength);
-            //Give the child the new rule
-            childGenome.ShootLSystem.Rules[rule.Key] = newRule;
+            childGenome.ShootLSystem.Rules['F'] = childGenome.ShootLSystem.NPointCrossover(
+                parent1Genome.ShootLSystem.Rules['F'], parent2Genome.ShootLSystem.Rules['F'], crossoverPoints);
+            childGenome.ShootLSystem.Rules['X'] = childGenome.ShootLSystem.NPointCrossover(
+                parent1Genome.ShootLSystem.Rules['X'], parent2Genome.ShootLSystem.Rules['X'], crossoverPoints);
         }
 
-        // Perform uniform crossover on the parents genome to make the child genome, select features of the l-system : rules, axiom, stepsize, angle and growth rate
-        // Shoot LSystem
+        if (crossoverMethod == CrossoverMethod.NPointSymmetrical)
+        {
+            childGenome.ShootLSystem.Rules['F'] = childGenome.ShootLSystem.SymmetricalNPointCrossover(
+                parent1Genome.ShootLSystem.Rules['F'], parent2Genome.ShootLSystem.Rules['F'], crossoverPoints);
+            childGenome.ShootLSystem.Rules['X'] = childGenome.ShootLSystem.SymmetricalNPointCrossover(
+                parent1Genome.ShootLSystem.Rules['X'], parent2Genome.ShootLSystem.Rules['X'], crossoverPoints);
+        }
+        
+        //Add additional crossoverMethod for just selecting the genes from one parent and then the parameters from the other
+        
+        //Picking a random parent to take step size and angle from
         childGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.ShootLSystem.StepSize : parent2Genome.ShootLSystem.StepSize;
         childGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1Genome.ShootLSystem.Angle : parent2Genome.ShootLSystem.Angle;
 

@@ -19,68 +19,80 @@ public class Plant : MonoBehaviour
     public GameObject LeafPrefab;
 
     public float maxGrowthIterations = 4;
-    public float branchCost = 0;
+    public float branchCost = 1;
     
-    private int iterationCount = 0;
-    private int branchCount;
+    public int iterationCount = 0;
+    //Incremented whenever create branch is called
+    public int branchCount { get; private set; }
+    //Incremented whenever create leaf is called
+    public int leafCount { get; private set; }
 
-    private ObjectPooler objectPooler;
 
-    private float sunlightWeight = 1;
-    private float waterCollectionWeight = 1;
-    private float branchProportionWeight = 10;
-    private float symmetryWeight = 0;
-    private float branchCountWeight = 0.125f;
+    public ObjectPooler objectPooler;
+
+    public enum FitnessFunction
+    {
+        Sunlight,
+        SunlightAndBranchProportion
+    };
     
+    public FitnessFunction fitnessFunction = FitnessFunction.Sunlight;
+
     //age in hours of plant since creation
     public int age = 0;
+    
+    // Initialize variables to keep track of bounds
+    private Vector3 minCorner;
+    private Vector3 maxCorner;
+    public float width { get; private set; }
+    public float height{ get; private set; }
 
     public float Fitness
     {
-        //To-do: implement bilateral symmetry
         get
         {
-            //Count number of branches and calculate proportion
-            char stackPush = '[';
-            float localBranchCount = 0;
-            string shootString = ShootState.ToString();
-            foreach (char c in shootString)
+            switch (fitnessFunction)
             {
-                if (c == stackPush)
-                    localBranchCount++;
-            }
-            //Count branches relative to length of whole shoot
-            //Plants that have more branches would have more leafs and in theory more sunlight 
-            float branchProportion = localBranchCount / (float)shootString.Length;
+                case FitnessFunction.Sunlight:
+                    return totalSunlightCollected;
+                
+                case FitnessFunction.SunlightAndBranchProportion:
+                    
+                    float sunlightWeight = 1f;
+                    float branchProportionWeight = 10f;
+                    float branchCountWeight = 0.125f;
+                    
+                    char stackPush = '[';
+                    float localBranchCount = 0;
+                    string shootString = ShootState.ToString();
+                    foreach (char c in shootString)
+                    {
+                        if (c == stackPush)
+                            localBranchCount++;
+                    }
+                    //Count branches relative to length of whole shoot
+                    //Plants that have more branches would have more leafs and in theory more sunlight 
+                    float branchProportion = localBranchCount / (float)shootString.Length;
 
-            float fitness = ((sunlightWeight * sunlightCollected)
-                + (waterCollectionWeight * waterCollected)
-                + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
-            
-            if (sunlightCollected > 0 || waterCollected > 0)
-            {
-                //Debug.Log("Fitness: " + fitness);
-                //Debug.Log("Sunlight: " + sunlightWeight * sunlightCollected);
-                //Debug.Log("Water: " + waterCollectionWeight * waterCollected);
-                //Debug.Log("Branch Proportion: " + branchProportionWeight * branchProportion);
+                    float fitness = ((sunlightWeight * totalSunlightCollected)
+                                     + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
+
+                    return fitness;
+                default:
+                    return -1f;
             }
 
-            return fitness;
         }
     }
 
-    //BranchCost is calculated based on:
-    //1. Number of consecutive branches (F)
     
     
-    private Stack<GameObject> shootBranches;
 
     public Plant(PlantGenome genome)
     {
         plantGenome = genome;
         ShootState = new LSystemState(Vector3.zero, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(Vector3.zero,  Quaternion.Euler(-90, 0, 0));
-        shootBranches = new Stack<GameObject>();
     }
 
     private void Awake()
@@ -88,11 +100,11 @@ public class Plant : MonoBehaviour
         if(plantGenome == null) plantGenome = new PlantGenome();
         ShootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
         RootState = new LSystemState(transform.position, Quaternion.Euler(-90, 0, 0));
-        shootBranches = new Stack<GameObject>();
-        
+
         objectPooler = FindObjectOfType<ObjectPooler>();
         
     }
+    
     
     
     private string GenerateShootInstructions(int iteration)
@@ -100,11 +112,7 @@ public class Plant : MonoBehaviour
         string prevInstructions = plantGenome.ShootLSystem.Axiom;
         string newInstructions = "";
 
-        for (int i = 0; i < iteration; i++)
-        {
-            newInstructions = plantGenome.ShootLSystem.ApplyRules(prevInstructions, 1);
-            prevInstructions = newInstructions;
-        }
+        newInstructions = plantGenome.ShootLSystem.ApplyRules(prevInstructions, iteration);
 
         return newInstructions;
     }
@@ -131,9 +139,21 @@ public class Plant : MonoBehaviour
         //grow the plant using sunlight resources collected
         else if (iterationCount < maxGrowthIterations)
         {
-            if (sunlightCollected >= (branchCost * iterationCount + branchCost) &&
-                waterCollected >= (branchCost * iterationCount * .5 + branchCost))
-            {
+
+            //Based on X and F rules, determine the number of branches (F) that would be created in the next iteration
+
+            float consecutiveBranchCost = 0;
+            consecutiveBranchCost += CalculateSquaredBranchCost(plantGenome.ShootLSystem.Rules['F']);
+            consecutiveBranchCost += CalculateSquaredBranchCost(plantGenome.ShootLSystem.Rules['X']);
+            //At end multiply the cost by the StepSize to determine final cost
+            consecutiveBranchCost *= plantGenome.ShootLSystem.StepSize;
+            
+            //This comes out to something between 1.5 for no consecutives and 12 for FFFF
+            //Debug.Log("Consecutive Branch Cost for Plant " + gameObject.name + ": " + consecutiveBranchCost);
+            
+            if (sunlightCollected >= (branchCost * iterationCount + consecutiveBranchCost) &&
+    waterCollected >= branchCost * iterationCount * .5)
+            { 
                 sunlightCollected -= branchCost * iterationCount + branchCost;
                 waterCollected -= branchCost * iterationCount * .5f + branchCost;
                 GrowShoot(iterationCount);
@@ -143,71 +163,103 @@ public class Plant : MonoBehaviour
         }
 
     }
+    
+    float CalculateSquaredBranchCost(string rule)
+    {
+        float totalFBranches = 0;
+        float branchCost = 0;
 
-    //TODO Create functions for calculating branchCost based on things like LSystem StepSize
+        //Count concurrent F's and create a increasingly more expensive branch cost as the number of consecutive branches increases
+        for (int i = 0; i < rule.Length; i++)
+        {
+            //If the current character is an F, increment the branch count
+            if (rule[i] == 'F') totalFBranches++;
+            //If the current character is not an F, add the cost of the current branch to the total cost and reset the branch count
+            else
+            {
+                //The cost of a branch is the square of the number of consecutive branches
+                branchCost += totalFBranches * totalFBranches;
+                totalFBranches = 0;
+            }
+        }
+        //divide the branchCost by the length of the rule to get the average cost of a branch
+        branchCost /= rule.Length;
+        
+        return branchCost;
+    }
     
     
     public void GrowShoot(int iterations)
+{
+    // Initialize variables to keep track of bounds
+    minCorner = ShootState.Position;
+    maxCorner = ShootState.Position;
+
+    string shootInstructions = GenerateShootInstructions(iterations);
+    float stepSize = plantGenome.ShootLSystem.StepSize;
+
+    for (int i = 0; i < shootInstructions.Length; i++)
     {
-        string shootInstructions = GenerateShootInstructions(iterations);
-        //Debug.Log(shootInstructions);
-        for (int i = 0; i < shootInstructions.Length; i++)
+        char symbol = shootInstructions[i];
+        switch (symbol)
         {
-            char symbol = shootInstructions[i];
-            switch (symbol)
-            {
-                case 'F':
-                    Vector3 startPosition = ShootState.Position;
-                    ShootState.MoveForward(plantGenome.ShootLSystem.StepSize);
-                    Vector3 endPosition = ShootState.Position;
-                    // Add a branch or a leaf based on the conditions
-                    bool shouldCreateLeaf =
-                        shootInstructions[(i + 1) % shootInstructions.Length] == 'X' ||
-                        shootInstructions[(i + 3) % shootInstructions.Length] == 'F' &&
-                        shootInstructions[(i + 4) % shootInstructions.Length] == 'X';
-                    //Without object pooling
-                    // GameObject prefabToUse = shouldCreateLeaf ? LeafPrefab : BranchPrefab;
-                    // CreateBranch(startPosition, endPosition, prefabToUse);
-                    //With object pooling
-                    if (shouldCreateLeaf)
-                    {
-                        CreateLeaf(startPosition, endPosition, LeafPrefab);
-                    }
-                    else
-                    {
-                        CreateBranch(startPosition, endPosition, BranchPrefab);
-                    }
-                    break;
-                case '+':
-                    ShootState.RotateLeft(plantGenome.ShootLSystem.Angle);
-                    break;
-                case '-':
-                    ShootState.RotateRight(plantGenome.ShootLSystem.Angle);
-                    break;
-                case '[':
-                    ShootState.PushState();
-                    // Add a leaf to the shoot
-                    GameObject leaf = Instantiate(LeafPrefab, ShootState.Position, ShootState.Orientation);
-                    leaf.transform.SetParent(transform);
-                    shootBranches.Push(leaf);
-                    break;
-                case ']':
-                    ShootState.PopState();
-                    if (shootBranches.Count > 0)
-                    {
-                        GameObject poppedLeaf = shootBranches.Pop();
-                        Destroy(poppedLeaf);
-                    }
-                    break;
-                case '/':
-                    ShootState.PitchDown(plantGenome.ShootLSystem.Angle);
-                    break;
-                case '*':
-                    ShootState.RotateUp(plantGenome.ShootLSystem.Angle);
-                    break;
-            }
+            case 'F':
+                Vector3 startPosition = ShootState.Position;
+                ShootState.MoveForward(stepSize);
+                Vector3 endPosition = ShootState.Position;
+                
+                // Update bounds based on start and end positions
+                minCorner = Vector3.Min(minCorner, startPosition);
+                minCorner = Vector3.Min(minCorner, endPosition);
+                maxCorner = Vector3.Max(maxCorner, startPosition);
+                maxCorner = Vector3.Max(maxCorner, endPosition);
+
+                // Add a branch or a leaf based on the conditions
+                bool shouldCreateLeaf =
+                    shootInstructions[(i + 1) % shootInstructions.Length] == 'X' ||
+                    shootInstructions[(i + 3) % shootInstructions.Length] == 'F' &&
+                    shootInstructions[(i + 4) % shootInstructions.Length] == 'X';
+
+                if (shouldCreateLeaf)
+                {
+                    CreateLeaf(startPosition, endPosition, LeafPrefab);
+                }
+                else
+                {
+                    CreateBranch(startPosition, endPosition, BranchPrefab);
+                }
+                break;
+            case '+':
+                ShootState.RotateLeft(plantGenome.ShootLSystem.Angle);
+                break;
+            case '-':
+                ShootState.RotateRight(plantGenome.ShootLSystem.Angle);
+                break;
+            case '[':
+                ShootState.PushState();
+                break;
+            case ']':
+
+                ShootState.PopState();
+                break;
+            case '/':
+                ShootState.PitchDown(plantGenome.ShootLSystem.Angle);
+                break;
+            case '*':
+                ShootState.RotateUp(plantGenome.ShootLSystem.Angle);
+                break;
         }
     }
+
+    // Calculate width and height
+    
+    //Width is the abs difference between the x and z values of the min and max corners averaged
+    width = (Mathf.Abs(maxCorner.x - minCorner.x) + Mathf.Abs(maxCorner.z - minCorner.z)) / 2;
+    //Height is the abs difference between the y values of the min and max corners
+    height = Mathf.Abs(maxCorner.y - minCorner.y);
+    
+    //Debug.Log("Plant: " + gameObject.name + "Width: " + width + " Height: " + height);
+}
 
     public void GrowRoot(int iterations)
     {
@@ -217,6 +269,8 @@ public class Plant : MonoBehaviour
 
     private void CreateBranch(Vector3 startPosition, Vector3 endPosition, GameObject branchPrefab)
     {
+        if(objectPooler == null) objectPooler = FindObjectOfType<ObjectPooler>();
+        
         Vector3 offset = endPosition - startPosition;
         float distance = offset.magnitude;
         Vector3 direction = offset.normalized;
@@ -227,6 +281,7 @@ public class Plant : MonoBehaviour
         branch.transform.rotation = Quaternion.LookRotation(direction);
         branch.transform.localScale = new Vector3(1, 1, distance);
         branch.transform.position += branch.transform.forward * distance / 2;
+        //Debug.Log("Branch being created name: " + branch.name);
         branch.transform.SetParent(transform);
 
         branchCount++;
@@ -234,6 +289,8 @@ public class Plant : MonoBehaviour
 
     private void CreateLeaf(Vector3 startPosition, Vector3 endPosition, GameObject leafPrefab)
     {
+        if(objectPooler == null) objectPooler = FindObjectOfType<ObjectPooler>();
+        
         Vector3 offset = endPosition - startPosition;
         float distance = offset.magnitude;
         Vector3 direction = offset.normalized;
@@ -244,6 +301,8 @@ public class Plant : MonoBehaviour
         leaf.transform.rotation = Quaternion.LookRotation(direction);
         leaf.transform.localScale = new Vector3(2, 2, distance);
         leaf.transform.position += leaf.transform.forward * distance / 2;
+       // Debug.Log("Leaf being created name: " + leaf.name);
+        //Debug.Log("Leaf being created parent: " + transform.name);
         leaf.transform.SetParent(transform);
         //TODO Make color of leaf dependent on height
 
@@ -273,8 +332,11 @@ public class Plant : MonoBehaviour
     {
         iterationCount = 0;
         age = 0;
+        branchCount = 0;
+        leafCount = 0;
         Grow();
     }
+    
     
     public void RandomizeGenome(bool completelyRandom = true)
     {
@@ -285,6 +347,11 @@ public class Plant : MonoBehaviour
     //on draw gizmos draw a vertical line from the plant indicating water collected and a vertical line indicating sun collected
     private void OnDrawGizmos()
     {
+        //Draw box between points minCorner and maxCorner
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireCube((minCorner + maxCorner) / 2, new Vector3(maxCorner.x - minCorner.x, maxCorner.y - minCorner.y, maxCorner.z - minCorner.z));
+        
+        
         //Sunlight
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(transform.position, transform.position + Vector3.up * sunlightCollected);
@@ -293,8 +360,8 @@ public class Plant : MonoBehaviour
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(transform.position + Vector3.right, transform.position + Vector3.right + Vector3.up * waterCollected);
         
-        //Fitness visualized using a sphere
-        //Gizmos.color = Color.green;
-        //Gizmos.DrawSphere(transform.position + Vector3.up * 2, Fitness);
+        //Fitness
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position + Vector3.right * 2, transform.position + Vector3.right * 2 + Vector3.up * Fitness);
     }
 }

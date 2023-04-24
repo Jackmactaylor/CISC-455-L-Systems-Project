@@ -13,6 +13,8 @@ public class Sun : MonoBehaviour
     public int numRaycasts;
     public float maxRaycastDistance;
     public float sunlightPerRaycast = 1f;
+    
+    public bool drawRays = true;
 
     // Store the current hour of the day
     private int currentHour;
@@ -32,23 +34,6 @@ public class Sun : MonoBehaviour
 
     public void NextHour()
     {
-        //Debug.Log($"Starting hour {currentHour}");
-
-        // Calculate the fraction of the day based on the current hour
-        //float fractionOfDay = (float)currentHour / (float)hoursInDay;
-
-        // Calculate the new position of the sun based on the fraction of the day
-        //Vector3 newPosition = Vector3.Lerp(startSunPosition.position, endSunPosition.position, fractionOfDay);
-
-        // Calculate the new rotation of the sun based on the fraction of the day
-        //Quaternion targetRotation = Quaternion.Euler((fractionOfDay * 180.0f) - 90.0f, -90.0f, 0.0f);
-        //Quaternion newRotation = Quaternion.LookRotation(newPosition - transform.position, Vector3.up);
-        //Quaternion finalRotation = Quaternion.Slerp(transform.rotation, targetRotation, fractionOfDay);
-
-        // Move the sun to its new position and rotate it towards the target rotation
-        //transform.position = newPosition;
-        //transform.rotation = Quaternion.Lerp(newRotation, finalRotation, fractionOfDay);
-        
         transform.position = sunPositions[currentHour];
         transform.rotation = Quaternion.LookRotation(groundPlane.center - transform.position, transform.up);
 
@@ -66,7 +51,7 @@ public class Sun : MonoBehaviour
             Vector3 direction = randomPoint - transform.position;
             Ray ray = new Ray(transform.position, direction.normalized);
 
-            Debug.DrawRay(ray.origin, ray.direction * maxRaycastDistance, Color.yellow, 1f);
+            if(drawRays)Debug.DrawRay(ray.origin, ray.direction * maxRaycastDistance, Color.yellow, 1f);
 
             RaycastHit hitInfo;
             if (Physics.Raycast(ray, out hitInfo, maxRaycastDistance))
@@ -76,18 +61,10 @@ public class Sun : MonoBehaviour
                     Plant plant = hitInfo.collider.transform.parent.GetComponent<Plant>();
                     if (plant != null)
                     {
-                        Debug.DrawLine(randomPoint, transform.position, Color.green, 10f);
+                        if(drawRays)Debug.DrawLine(randomPoint, transform.position, Color.green, 10f);
                         plant.AddSunlight(sunlightPerRaycast);
                         //Debug.Log($"Added {sunlightPerRaycast} sunlight to plant {plant.name}");
                     }
-                }
-            }
-            else
-            {
-                RaycastHit groundHitInfo;
-                if (Physics.Raycast(ray, out groundHitInfo, maxRaycastDistance, LayerMask.GetMask("Ground")))
-                {
-                    //Debug.Log("Hit ground");
                 }
             }
         }
