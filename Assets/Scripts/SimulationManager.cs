@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class SimulationManager : MonoBehaviour
 {
     public GameObject PlantPrefab;
+    public Plant.FitnessFunction fitnessFunction = Plant.FitnessFunction.Sunlight;
     public EvolutionManager EvolutionManager;
     public Sun Sun;
     public BoxCollider groundPlane;
@@ -232,6 +233,7 @@ public class SimulationManager : MonoBehaviour
             GameObject plantObject = Instantiate(PlantPrefab, randomPositions[i], Quaternion.LookRotation(randomRotation));
             plantObject.name = "Plant " + i + "_"+ currentDay;
             Plant plant = plantObject.GetComponent<Plant>();
+            plant.fitnessFunction  = fitnessFunction;
             
             //Debug.Log("Plant Name: " + plantObject.name);
             plant.RandomizeGenome(completelyRandomizeStartGenomes);
@@ -337,6 +339,7 @@ public class SimulationManager : MonoBehaviour
                 plantObject.name = $"Plant {positionIndex}_{currentDay}";
                 Plant instantiatedPlant = plantObject.GetComponent<Plant>();
                 instantiatedPlant.plantGenome = genome;
+                instantiatedPlant.fitnessFunction = fitnessFunction;
                 currentPlants[i] = instantiatedPlant;
                 positionIndex++;
             }

@@ -11,6 +11,7 @@ public class EvolutionManager : MonoBehaviour
     public SelectionMethod selectionMethod;
     public SelectionType selectionType;
     public CrossoverMethod crossoverMethod = CrossoverMethod.OnePoint;
+
     public float mutationRate = 0.1f;
     public float crossoverRate = 0.2f;
     public int crossoverPoints = 1;
