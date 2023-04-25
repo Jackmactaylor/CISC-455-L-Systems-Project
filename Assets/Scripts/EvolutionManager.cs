@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class EvolutionManager : MonoBehaviour
 {
@@ -14,13 +16,27 @@ public class EvolutionManager : MonoBehaviour
 
     public float mutationRate = 0.1f;
     public float crossoverRate = 0.2f;
-    public int crossoverPoints = 1;
+    public int crossoverPoints = 3;
     public int tournamentSize;
     
     public bool useAgism = true;
     public int numOfDaysForAgism = 3;
     public float percentOldestToRemove = 0.2f;
+    
+    public TMP_Dropdown selectionDropdown;
+    public TMP_Dropdown crossoverDropdown; 
 
+    
+    public void SetCrossover()
+    {
+        crossoverMethod = (CrossoverMethod)crossoverDropdown.value;
+    }
+    
+    public void SetSelection()
+    {
+        selectionMethod = (SelectionMethod)selectionDropdown.value;
+    }
+    
     public List<Plant> ApplyEvolutionaryAlgorithm(List<Plant> plantPopulation, int currentDay, float percentageToReplace = 0.20f )
     {
         //Debug.Log("plant population: " + plantPopulation);

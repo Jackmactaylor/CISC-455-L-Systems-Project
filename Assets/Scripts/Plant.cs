@@ -54,7 +54,7 @@ public class Plant : MonoBehaviour
             switch (fitnessFunction)
             {
                 case FitnessFunction.Sunlight:
-                    return totalSunlightCollected / (leafCount);
+                    return totalSunlightCollected;
                 
                 case FitnessFunction.SunlightAndBranchProportion:
                     

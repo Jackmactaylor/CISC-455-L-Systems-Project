@@ -38,6 +38,8 @@ public class SimulationManager : MonoBehaviour
     public TextMeshProUGUI AvgFitnessText;
     public TextMeshProUGUI HighestFitnessText;
     public TextMeshProUGUI LowestFitnessText;
+    public Slider autoSimulateDaysSlider;
+    public TMP_Dropdown fitnessDropdown; 
 
     public Slider hourSlider;
 
@@ -91,7 +93,17 @@ public class SimulationManager : MonoBehaviour
         autoNextDay = !autoNextDay;
         autoNextHour = !autoNextHour;
     }
+
+    public void SetAutoSimulationDays()
+    {
+        numDaysToSimulate = (int)autoSimulateDaysSlider.value;
+    }
     
+    public void SetFitnessFunction()
+    {
+        fitnessFunction = (Plant.FitnessFunction)fitnessDropdown.value;
+    }
+
 
     //Coroutine NextStep to wait for a second before calling NextStep
     private IEnumerator NextStepCoroutine()
@@ -110,6 +122,8 @@ public class SimulationManager : MonoBehaviour
             //Save data for each plant in currentPlantPopulation
             foreach (Plant plant in currentPlantPopulation)
             {
+                plant.fitnessFunction = fitnessFunction;
+                
                 float sunlightOverTotalCells = 0;
                 float sunlightOverTotalLeafCount = 0;
                 
