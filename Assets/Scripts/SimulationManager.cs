@@ -187,7 +187,11 @@ public class SimulationManager : MonoBehaviour
     {
         float totalFitness = 0;
         foreach (Plant plant in currentPlantPopulation)
-        {
+        {   
+            if(plant.Fitness == float.NaN)
+            {
+                totalFitness += 0;
+            }
             totalFitness += plant.Fitness;
         }
 

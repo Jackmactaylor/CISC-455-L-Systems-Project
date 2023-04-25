@@ -54,7 +54,7 @@ public class Plant : MonoBehaviour
             switch (fitnessFunction)
             {
                 case FitnessFunction.Sunlight:
-                    return totalSunlightCollected;
+                    return totalSunlightCollected / (leafCount);
                 
                 case FitnessFunction.SunlightAndBranchProportion:
                     
@@ -74,8 +74,8 @@ public class Plant : MonoBehaviour
                     //Plants that have more branches would have more leafs and in theory more sunlight 
                     float branchProportion = localBranchCount / (float)shootString.Length;
 
-                    float fitness = ((sunlightWeight * totalSunlightCollected)
-                                     + (branchProportionWeight * branchProportion)) - ((float)Math.Pow(branchCountWeight * branchCount, 2));
+                    float fitness = (totalSunlightCollected / leafCount)*80f +
+                                     + (20f* branchCount/(branchCount+leafCount));
 
                     return fitness;
                 default:
@@ -305,6 +305,7 @@ public class Plant : MonoBehaviour
         //Debug.Log("Leaf being created parent: " + transform.name);
         leaf.transform.SetParent(transform);
         //TODO Make color of leaf dependent on height
+        leafCount++;    
 
     }
     
