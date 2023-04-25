@@ -21,21 +21,17 @@ public class LSystem
         "F+F-F", //a branch that splits into two branches at an angle of 120 degrees, forming a "Y" shape
         "F[+F]F[-F]F", //two branches at angles of 45 degrees to the right and left, with additional straight line segments or branches in between.
         "F[*+F][-F][*F]", //splits into two branches, an additional straight line segment or branch
-        "F*F/[-F+F+F]/[+F-F-F]",
         "F[/F*F*F][/F*F*F]/F"
     };
 
         
     //Plants
     string[] XStrings = {
-        "[F[+FX][*+FX][/+FX]][F[-FX][*-FX][/-FX]]", // Symmetrical rule 1
         "[F[+FX][*+FX]][F[-FX][*-FX]]", // Symmetrical rule 2
         "[F[+FX][*+FX][/+FX]]", // Taken from the original L-System implementation
         "[*+FX]X[+FX][/+F-FX]", // Taken from the original L-System implementation
-        "[F[-X+F[+FX]][*-X+F[+FX]][/-X+F[+FX]-X]]",// Taken from the original L-System implementation
-        "[F[+F[-FX][+F/X]]][F[-F[+FX][-F*X]]]", //asymmetry
         "[F[*+FX][+FX][/-FX]]", //v structure
-        "F[+FX][*+FX][-F[-FX]][/-F[-FX]]" //y structure
+        
 
     };
 
@@ -74,26 +70,87 @@ public class LSystem
     
     public string NPointCrossover(string parent1, string parent2, int n)
     {
-        StringBuilder child = new StringBuilder(parent1);
+        
+        int genomeLength = Math.Min(parent1.Length, parent2.Length);
+        string child = "";
+        int[] crossoverPoints = new int[n];
+
 
         // Insert substrings from parent2 into parent1 at n evenly spaced points
-        for (int i = 1; i <= n; i++)
+        for (int i = 0; i < n; i++)
         {
-            int insertIndex = (int)(i * (parent1.Length / (float)(n + 1))); // Calculate the index to insert at
-            if (insertIndex < child.Length) // Check if the index is in range
+            int point = UnityEngine.Random.Range(1, genomeLength);
+            while (crossoverPoints.Contains(point))
             {
-                int length = Math.Min(parent2.Length - insertIndex, child.Length - insertIndex); // Limit the length of the substring
-                if (length > 0)
-                {
-                    child.Remove(insertIndex, length); // Remove any existing characters at that index
-                    child.Insert(insertIndex, parent2.Substring(insertIndex, length)); // Insert substring from parent2
-                }
+                point = UnityEngine.Random.Range(1, genomeLength);
             }
+            crossoverPoints[i] = point;
         }
+
+        Array.Sort(crossoverPoints);
+        bool swap = false;
+        int currentIndex = 0;
+        for (int i = 0; i <= n; i++)
+        {
+            int endpoint = i == n ? genomeLength : crossoverPoints[i];
+            if (swap)
+            {
+                
+                child += parent2.Substring(currentIndex, endpoint - currentIndex);
+                if (i % 1 == 0)
+                {
+                    child = EnsureBalanced(child);
+                }
+
+
+            }
+            else
+            {
+                child += parent1.Substring(currentIndex, endpoint - currentIndex);
+                if (i % 2 == 0)
+                {
+                    child = EnsureBalanced(child);
+                }
+                
+
+            }
+            swap = !swap;
+            currentIndex = endpoint;
+        }
+        child = EnsureBalanced(child);
 
         return child.ToString();
     }
-    
+
+    private static string EnsureBalanced(string genome)
+    {
+        int openCount = 0;
+        int closeCount = 0;
+
+        foreach (char c in genome)
+        {
+            if (c == '[')
+            {
+                openCount++;
+            }
+            else if (c == ']')
+            {
+                closeCount++;
+            }
+        }
+
+        if (openCount > closeCount)
+        {
+            genome += new string(']', openCount - closeCount);
+        }
+        else if (closeCount > openCount)
+        {
+            genome = new string('[', closeCount - openCount) + genome;
+        }
+
+        return genome;
+    }
+
     //performs crossover for half the parents string and then mirrors it to create a symmetrical child string
     public string SymmetricalNPointCrossover(string parent1, string parent2, int n)
     {

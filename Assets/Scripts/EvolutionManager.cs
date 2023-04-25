@@ -47,6 +47,8 @@ public class EvolutionManager : MonoBehaviour
             {
                 //50 50 the child gets the genome of either parent
                 child = new Plant(Random.value < 0.5f ? parent1.plantGenome : parent2.plantGenome);
+                child.plantGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1.plantGenome.ShootLSystem.StepSize : parent2.plantGenome.ShootLSystem.StepSize;
+                child.plantGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1.plantGenome.ShootLSystem.Angle: parent2.plantGenome.ShootLSystem.Angle;
             }
 
             if (Random.value < mutationRate)
@@ -185,6 +187,7 @@ public class EvolutionManager : MonoBehaviour
 
         PlantGenome parent1Genome = parent1.plantGenome;
         PlantGenome parent2Genome = parent2.plantGenome;
+        
 
         if (crossoverMethod == CrossoverMethod.OnePoint)
         {
@@ -213,8 +216,7 @@ public class EvolutionManager : MonoBehaviour
         //Add additional crossoverMethod for just selecting the genes from one parent and then the parameters from the other
         
         //Picking a random parent to take step size and angle from
-        childGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1Genome.ShootLSystem.StepSize : parent2Genome.ShootLSystem.StepSize;
-        childGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1Genome.ShootLSystem.Angle : parent2Genome.ShootLSystem.Angle;
+        
 
         Plant child = new Plant(childGenome);
         return child;
