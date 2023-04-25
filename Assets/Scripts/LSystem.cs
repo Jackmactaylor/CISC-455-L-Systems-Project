@@ -90,7 +90,7 @@ public class LSystem
         Array.Sort(crossoverPoints);
         bool swap = false;
         int currentIndex = 0;
-        for (int i = 0; i <= n; i++)
+        for (int i = 0; i < n; i++)
         {
             int endpoint = i == n ? genomeLength : crossoverPoints[i];
             if (swap)
@@ -146,6 +146,11 @@ public class LSystem
         else if (closeCount > openCount)
         {
             genome = new string('[', closeCount - openCount) + genome;
+        }
+
+        if (genome[genome.Length - 1] != ']')
+        {
+            genome += "F]";
         }
 
         return genome;
