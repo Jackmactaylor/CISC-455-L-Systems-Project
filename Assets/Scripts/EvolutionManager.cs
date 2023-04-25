@@ -47,8 +47,7 @@ public class EvolutionManager : MonoBehaviour
             {
                 //50 50 the child gets the genome of either parent
                 child = new Plant(Random.value < 0.5f ? parent1.plantGenome : parent2.plantGenome);
-                child.plantGenome.ShootLSystem.StepSize = Random.value < 0.5f ? parent1.plantGenome.ShootLSystem.StepSize : parent2.plantGenome.ShootLSystem.StepSize;
-                child.plantGenome.ShootLSystem.Angle = Random.value < 0.5f ? parent1.plantGenome.ShootLSystem.Angle: parent2.plantGenome.ShootLSystem.Angle;
+          
             }
 
             if (Random.value < mutationRate)

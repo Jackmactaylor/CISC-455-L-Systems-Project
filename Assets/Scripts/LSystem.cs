@@ -31,6 +31,8 @@ public class LSystem
         "[F[+FX][*+FX][/+FX]]", // Taken from the original L-System implementation
         "[*+FX]X[+FX][/+F-FX]", // Taken from the original L-System implementation
         "[F[*+FX][+FX][/-FX]]", //v structure
+         "[F[-X+F[+FX]][*-X+F[+FX]][/-X+F[+FX]-X]]",// Taken from the original L-System implementation
+        "[F[+F[-FX][+F/X]]][F[-F[+FX][-F*X]]]" //asymmetry
         
 
     };
@@ -150,7 +152,7 @@ public class LSystem
 
         if (genome[genome.Length - 1] != ']')
         {
-            genome += "F]";
+            genome += "F";
         }
 
         return genome;
